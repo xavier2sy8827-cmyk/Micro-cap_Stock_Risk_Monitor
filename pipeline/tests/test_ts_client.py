@@ -33,7 +33,7 @@ def _no_sleep(monkeypatch) -> None:
 
 def make_client(pro: DummyPro, retries: int = 2) -> TsClient:
     c = TsClient(token="x", min_interval=0.0, max_retries=retries)
-    c._pro = pro
+    c._pro_override = pro  # 测试注入；线程共享只读
     return c
 
 
@@ -82,3 +82,11 @@ def test_missing_token(monkeypatch) -> None:
     monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
     with pytest.raises(TsError):
         TsClient(token=None)
+
+
+def test_fetch_many() -> None:
+    pro = DummyPro()
+    c = make_client(pro)
+    out = c.fetch_many([1, 2, 3], lambda x: c.call("daily", trade_date=str(x)))
+    assert set(out) == {1, 2, 3}
+    assert all(len(v) == 1 for v in out.values())

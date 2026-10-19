@@ -34,6 +34,7 @@ API_MIN_INTERVAL = 1.0 / 3.0  # 约 3 req/s
 API_MAX_RETRIES = 3
 API_BACKOFF = (1.0, 2.0, 4.0)
 API_ROW_LIMIT = 6000
+API_WORKERS = 8  # 全市场单次调用 5~10s，必须并发发出、全局限速
 
 # ---- 格式 ----------------------------------------------------------------
 FLOAT_FMT = ".6f"

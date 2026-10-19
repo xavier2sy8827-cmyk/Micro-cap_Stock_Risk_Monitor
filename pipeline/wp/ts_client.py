@@ -6,8 +6,10 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date as date_cls
 from datetime import datetime, timedelta
 from typing import Any, Callable, Iterable
@@ -67,7 +69,10 @@ class TsClient:
             raise TsError("TUSHARE_TOKEN 未设置")
         self.min_interval = C.API_MIN_INTERVAL if min_interval is None else min_interval
         self.max_retries = C.API_MAX_RETRIES if max_retries is None else max_retries
-        self._pro = None
+        self.workers = C.API_WORKERS
+        self._local = threading.local()
+        self._lock = threading.Lock()
+        self._cache_lock = threading.Lock()
         self._last_call = 0.0
         self._counts: Counter[str] = Counter()
         self._attempts: Counter[str] = Counter()
@@ -77,27 +82,39 @@ class TsClient:
     # ------------------------------------------------------------------ 基础
     @property
     def pro(self):
-        if self._pro is None:
+        """每个线程一个 tushare 客户端（requests.Session 不保证线程安全）。"""
+        override = getattr(self, "_pro_override", None)
+        if override is not None:
+            return override
+        pro = getattr(self._local, "pro", None)
+        if pro is None:
             import tushare as ts
 
-            self._pro = ts.pro_api(self.token)
-        return self._pro
+            pro = ts.pro_api(self.token)
+            self._local.pro = pro
+        return pro
 
     def _throttle(self) -> None:
-        wait = self.min_interval - (time.monotonic() - self._last_call)
+        """全局 3 req/s：在锁内预留下一个发车时刻，线程各自 sleep 到点。"""
+        with self._lock:
+            now = time.monotonic()
+            start = max(now, self._last_call + self.min_interval)
+            self._last_call = start
+            wait = start - now
         if wait > 0:
             time.sleep(wait)
-        self._last_call = time.monotonic()
 
     def call(self, api: str, **params: Any) -> pd.DataFrame:
-        """调用一个接口；仅对瞬时错误重试。"""
+        """调用一个接口；仅对瞬时错误重试。线程安全。"""
         last: Exception | None = None
         for attempt in range(self.max_retries + 1):
             self._throttle()
-            self._attempts[api] += 1
+            with self._lock:
+                self._attempts[api] += 1
             try:
                 df = self.pro.query(api, **params)
-                self._counts[api] += 1
+                with self._lock:
+                    self._counts[api] += 1
                 if df is None:
                     return pd.DataFrame()
                 return df
@@ -112,6 +129,23 @@ class TsClient:
                 if attempt < self.max_retries:
                     time.sleep(C.API_BACKOFF[min(attempt, len(C.API_BACKOFF) - 1)])
         raise TsError(f"{api} 重试 {self.max_retries} 次后仍失败: {last}")
+
+    def fetch_many(
+        self,
+        items: Iterable[Any],
+        fn: Callable[[Any], Any],
+        workers: int | None = None,
+    ) -> dict[Any, Any]:
+        """并发执行独立调用（全局限速在 call 内）。结果按 item 返回。"""
+        items = list(items)
+        out: dict[Any, Any] = {}
+        if not items:
+            return out
+        with ThreadPoolExecutor(max_workers=workers or self.workers) as pool:
+            futures = {pool.submit(fn, item): item for item in items}
+            for fut in as_completed(futures):
+                out[futures[fut]] = fut.result()
+        return out
 
     def df(
         self,
@@ -128,20 +162,30 @@ class TsClient:
         return out
 
     def stats(self) -> dict[str, Any]:
-        return {"calls": dict(self._counts), "attempts": dict(self._attempts), "total": sum(self._counts.values())}
+        with self._lock:
+            calls = dict(self._counts)
+            attempts = dict(self._attempts)
+        return {"calls": calls, "attempts": attempts, "total": sum(calls.values())}
 
     def reset_stats(self) -> None:
-        self._counts.clear()
-        self._attempts.clear()
+        with self._lock:
+            self._counts.clear()
+            self._attempts.clear()
 
     def _cached(self, key: tuple[Any, ...], loader: Callable[[], pd.DataFrame]) -> pd.DataFrame:
-        """同一次运行内复用（池/行业/元数据会被多次调用）。"""
-        if key not in self._cache:
-            self._cache[key] = loader()
-        return self._cache[key]
+        """同一次运行内复用（池/行业/元数据会被多次调用）。线程安全。"""
+        with self._cache_lock:
+            hit = self._cache.get(key)
+        if hit is not None:
+            return hit
+        value = loader()
+        with self._cache_lock:
+            self._cache.setdefault(key, value)
+            return self._cache[key]
 
     def clear_cache(self) -> None:
-        self._cache.clear()
+        with self._cache_lock:
+            self._cache.clear()
 
     # ------------------------------------------------------------------ 日历
     def trade_days(self, start: str, end: str) -> list[str]:
