@@ -81,7 +81,8 @@ def load_st_info(client: TsClient, day: str) -> StInfo:
     delist: set[str] = set()
     nc = None
     try:
-        nc = client.namechange(f"{d[:4]}0101", day)
+        # 多取一年，覆盖跨年度的 ST/退市整理期段落
+        nc = client.namechange(f"{int(d[:4]) - 1}0101", day)
     except TsError:
         nc = None
 
@@ -192,9 +193,10 @@ def build_universe(
 
     is_star = u["ts_code"].str.startswith(("688", "689"))
     name = u["name"].astype("string").fillna("")
-    name_st = name.str.contains("ST", na=False)
-    name_delist = name.str.endswith("退") | name.str.contains("退市", na=False)
 
+    # 注意：名称规则只做事后诊断，**不参与历史过滤**。
+    # 当前名称带 ST/退 的股票，在历史日期可能完全正常（后来才戴帽/退市），
+    # 用当前名称筛历史会把旧池成员误剔除（实测 2024-06-21 差 46 只）。
     keep = (
         ~u["ts_code"].str.endswith(C.EXCLUDE_SUFFIXES)
         & ~u["ts_code"].str.startswith(C.EXCLUDE_PREFIXES)
@@ -204,14 +206,13 @@ def build_universe(
         & (u["delist_date_dt"].isna() | (u["delist_date_dt"] > t))
         & ~u["ts_code"].isin(info.st)
         & ~u["ts_code"].isin(info.delist_period)
-        & ~name_st
-        & ~name_delist
     )
     u = u[keep].copy()
 
     u["st"] = u["ts_code"].isin(info.st)
     u["delist_period"] = u["ts_code"].isin(info.delist_period)
     u["is_star"] = is_star[keep].to_numpy()
+    u["name_suspect"] = name[keep].str.contains("ST", na=False) | name[keep].str.endswith("退")
     u = u.sort_values(["ts_code"]).reset_index(drop=True)
     return u, prev, info
 

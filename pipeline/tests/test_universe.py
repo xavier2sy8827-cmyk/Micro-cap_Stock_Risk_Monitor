@@ -20,6 +20,7 @@ def _basic() -> pd.DataFrame:
         ("000006.SZ", "次新样本", "主板", "20260901", None),
         ("000007.SZ", "整理样本", "主板", "20150101", None),
         ("000008.SZ", "*ST名称", "主板", "20160101", None),
+        ("000009.SZ", "样本退", "主板", "20170101", None),
         ("688001.SH", "华兴源创", "科创板", "20190722", None),
         ("830001.BJ", "北交样本", "北交所", "20200101", None),
         ("900901.SH", "云赛B股", "主板", "19920101", None),
@@ -37,6 +38,7 @@ def _daily_basic() -> pd.DataFrame:
         "000006.SZ": (50.0, 30.0),
         "000007.SZ": (10.0, 4.0),
         "000008.SZ": (9.0, 3.0),
+        "000009.SZ": (8.0, 2.0),
         "688001.SH": (40.0, 20.0),
         "830001.BJ": (30.0, 10.0),
         "900901.SH": (20.0, 5.0),
@@ -78,7 +80,10 @@ class FakeClient:
         if self.st_raises:
             raise TsError("boom")
         return pd.DataFrame(
-            [("000003.SZ", "ST某某", "20261015", "ST", "风险警示板")],
+            [
+                ("000003.SZ", "ST某某", "20261015", "ST", "风险警示板"),
+                ("000008.SZ", "*ST名称", "20261015", "ST", "风险警示板"),
+            ],
             columns=["ts_code", "name", "trade_date", "type", "type_name"],
         )
 
@@ -89,7 +94,8 @@ class FakeClient:
 def test_universe_filters() -> None:
     u, prev, info = build_universe(FakeClient(), "2026-10-16")
     assert prev == "20261015"
-    assert sorted(u["ts_code"]) == ["000001.SZ", "000002.SZ", "000004.SZ"]
+    # 000009 当前名称带“退”，但在 T 日并未退市/整理：名称不参与历史过滤
+    assert sorted(u["ts_code"]) == ["000001.SZ", "000002.SZ", "000004.SZ", "000009.SZ"]
     assert info.source == "stock_st"
     assert not info.degraded
 
@@ -98,8 +104,8 @@ def test_pools_select_by_mv() -> None:
     c = FakeClient()
     total = build_pool(c, "2026-10-16", "total400", n=2)
     circ = build_pool(c, "2026-10-16", "circ1000", n=2)
-    assert total.df["ts_code"].tolist() == ["000004.SZ", "000002.SZ"]
-    assert circ.df["ts_code"].tolist() == ["000004.SZ", "000002.SZ"]
+    assert total.df["ts_code"].tolist() == ["000009.SZ", "000004.SZ"]
+    assert circ.df["ts_code"].tolist() == ["000009.SZ", "000004.SZ"]
     assert total.df["rank_in_pool"].tolist() == [1, 2]
 
 
@@ -116,9 +122,10 @@ def test_st_fallback_to_namechange() -> None:
     assert "000007.SZ" in info.delist_period
 
 
-def test_name_rule_catches_missing_st() -> None:
+def test_current_name_does_not_filter_history() -> None:
     u, _, _ = build_universe(FakeClient(), "2026-10-16")
-    assert "000008.SZ" not in set(u["ts_code"])
+    assert "000009.SZ" in set(u["ts_code"])  # 当前名称带“退”，但 T 日未退市
+    assert "000008.SZ" not in set(u["ts_code"])  # 由 stock_st 判定，而非名称
 
 
 def test_kind_validation() -> None:
