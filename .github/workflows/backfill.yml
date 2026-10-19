@@ -1,0 +1,83 @@
+name: backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: '输出起点 YYYY-MM-DD'
+        required: true
+        default: '2016-01-04'
+      end:
+        description: '结束日 YYYY-MM-DD'
+        required: true
+        default: '2026-10-16'
+      fetch_start:
+        description: '取数预热起点 YYYY-MM-DD'
+        required: true
+        default: '2015-09-01'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wp-data
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data_store
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install
+        working-directory: pipeline
+        run: pip install -r requirements.txt
+
+      - name: Backfill
+        working-directory: pipeline
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python -m wp slice \
+            --start "${{ inputs.start }}" \
+            --end "${{ inputs.end }}" \
+            --fetch-start "${{ inputs.fetch_start }}" \
+            --data-dir "${{ github.workspace }}/data_store"
+          python -m wp manifest --data-dir "${{ github.workspace }}/data_store" \
+            --start "${{ inputs.start }}" --end "${{ inputs.end }}"
+          python -m wp verify --data-dir "${{ github.workspace }}/data_store" \
+            --start "${{ inputs.start }}" --end "${{ inputs.end }}"
+
+      - name: Commit data
+        run: |
+          cd data_store
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no data change"
+          else
+            git commit -m "data: backfill ${{ inputs.start }} ~ ${{ inputs.end }}"
+            git push origin HEAD:data
+          fi
+
+  deploy:
+    needs: backfill
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml

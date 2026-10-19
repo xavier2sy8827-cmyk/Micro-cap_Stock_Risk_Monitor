@@ -1,6 +1,7 @@
 # node
 node_modules/
 dist/
+web/public/data/
 
 # python
 __pycache__/

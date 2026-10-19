@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from wp import config as C
+from wp.factors import FACTORS, FACTOR_NAMES
 
 
 def _num(v, digits: int = 6):
@@ -21,6 +23,28 @@ def _num(v, digits: int = 6):
     except (TypeError, ValueError):
         return None
     return round(float(v), digits)
+
+
+def _jsonable(obj):
+    """把 NaN/NaT/numpy 标量转成合法 JSON 值。"""
+    if isinstance(obj, dict):
+        return {k: _jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonable(v) for v in obj]
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return _jsonable(float(obj))
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if obj is pd.NA or obj is pd.NaT:
+        return None
+    try:
+        if pd.isna(obj):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return obj
 
 
 def _arr(s: pd.Series, digits: int = 6) -> list:
@@ -80,6 +104,59 @@ def _signal(key: str, label: str, m: pd.DataFrame, dates: pd.Series, value_col: 
     }
 
 
+def _build_factors(src: Path, dates: pd.Series, meta_src: dict) -> dict:
+    stub = {
+        "dates": dates.tolist(),
+        "factors": FACTORS,
+        "names": FACTOR_NAMES,
+        "states": {},
+        "ic": {},
+        "ic_mean_252": {},
+        "icir_252": {},
+        "ls_nav": {},
+        "events": [],
+        "tail_gap": 20,
+        "updated_through": meta_src.get("factor_ic_through"),
+    }
+    fic_path = src / "factor_ic.csv"
+    fst_path = src / "factor_states.csv"
+    if not fic_path.exists() or not fst_path.exists():
+        return stub
+    fic = pd.read_csv(fic_path, dtype={"date": str})
+    fst = pd.read_csv(fst_path, dtype={"date": str})
+    if fic.empty or fst.empty:
+        return stub
+    dlist = dates.tolist()
+    out = dict(stub)
+    out["states"] = {}
+    out["ic"] = {}
+    out["ic_mean_252"] = {}
+    out["icir_252"] = {}
+    out["ls_nav"] = {}
+    for f in FACTORS:
+        si = fic[fic["factor"] == f].set_index("date").reindex(dlist)
+        ss = fst[fst["factor"] == f].set_index("date").reindex(dlist)
+        out["ic"][f] = _arr(si["rank_ic"])
+        out["ic_mean_252"][f] = _arr(si["ic_mean_252"])
+        out["icir_252"][f] = _arr(si["icir_252"])
+        out["ls_nav"][f] = _arr(si["ls_nav"])
+        out["states"][f] = {
+            "state": _arr(ss["state"], 0),
+            "L": _arr(ss["L"], 0),
+            "D": _arr(ss["D"], 0),
+            "R": _arr(ss["R"], 0),
+            "F": _arr(ss["F"], 0),
+            "judge_nan": _arr(ss["judge_nan"], 0),
+        }
+    ev_path = src / "factor_events.csv"
+    if ev_path.exists():
+        ev = pd.read_csv(ev_path)
+        out["events"] = ev.to_dict("records")
+    last_ic = fic.dropna(subset=["rank_ic"])["date"]
+    out["updated_through"] = str(last_ic.max()) if len(last_ic) else out["updated_through"]
+    return out
+
+
 def build(data_dir: str | Path, out_dir: str | Path) -> dict:
     src = Path(data_dir)
     m = pd.read_csv(src / "metrics.csv", dtype={"date": str}).sort_values("date").reset_index(drop=True)
@@ -94,7 +171,7 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "data_through": str(last["date"]),
         "margin_through": margin_through,
-        "factor_ic_through": None,
+        "factor_ic_through": meta_src.get("factor_ic_through"),
         "industry_version": "SW2021" if str(last["date"]) >= C.INDUSTRY_SWITCH_DATE else "SW2014",
         "warnings": meta_src.get("warnings", []),
         "pipeline_version": meta_src.get("pipeline_version", C.PIPELINE_VERSION),
@@ -206,6 +283,8 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "wp400_n": _arr(_col(m, "margin_wp400_n"), 0),
     }
 
+    factors = _build_factors(src, dates, meta_src)
+
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     payloads = {
@@ -215,9 +294,9 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "alla.json": alla,
         "layers.json": layers,
         "margin.json": margin,
-        "factors.json": {"dates": dates.tolist(), "stub": True},
+        "factors.json": factors,
     }
     for name, obj in payloads.items():
         with open(out / name, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n")
+            fh.write(json.dumps(_jsonable(obj), ensure_ascii=False, separators=(",", ":"), allow_nan=False) + "\n")
     return meta

@@ -175,9 +175,18 @@ interface HeatmapProps {
   matrix: Num[][]
   dates: string[]
   height?: number
+  max?: number
+  colors?: string[]
 }
 
-export function Heatmap({ names, matrix, dates, height = 420 }: HeatmapProps) {
+export function Heatmap({
+  names,
+  matrix,
+  dates,
+  height = 420,
+  max = 100,
+  colors = ['#2f6fed', '#eef2f7', '#d5495c'],
+}: HeatmapProps) {
   const data: [number, number, number][] = []
   for (let y = 0; y < names.length; y += 1) {
     const row = matrix[y] ?? []
@@ -211,7 +220,7 @@ export function Heatmap({ names, matrix, dates, height = 420 }: HeatmapProps) {
     },
     visualMap: {
       min: 0,
-      max: 100,
+      max,
       calculable: false,
       orient: 'horizontal',
       left: 'center',
@@ -219,7 +228,7 @@ export function Heatmap({ names, matrix, dates, height = 420 }: HeatmapProps) {
       itemWidth: 8,
       itemHeight: 50,
       textStyle: { fontSize: 9, color: AXIS },
-      inRange: { color: ['#2f6fed', '#eef2f7', '#d5495c'] },
+      inRange: { color: colors },
     },
     series: [
       {

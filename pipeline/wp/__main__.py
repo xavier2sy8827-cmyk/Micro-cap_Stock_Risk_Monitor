@@ -67,6 +67,7 @@ def cmd_slice(args: argparse.Namespace) -> int:
         fetch_start=args.fetch_start,
         data_dir=args.data_dir,
         include_margin=not args.no_margin,
+        include_moneyflow=not args.no_moneyflow,
     )
     print(json.dumps({"rows": meta.get("days"), "through": meta.get("data_through")}, ensure_ascii=False))
     return 0
@@ -76,6 +77,30 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     meta = build_site(args.data_dir, args.out)
     print(json.dumps({"data_through": meta.get("data_through"), "out": args.out}, ensure_ascii=False))
     return 0
+
+
+def cmd_daily(args: argparse.Namespace) -> int:
+    from wp.daily import run_daily
+
+    out = run_daily(args.data_dir, day=args.date, window=args.window)
+    print(json.dumps(out, ensure_ascii=False))
+    return 0
+
+
+def cmd_manifest(args: argparse.Namespace) -> int:
+    from wp.manifest import make_manifest
+
+    man = make_manifest(args.data_dir, args.start, args.end)
+    print(json.dumps({"outputs": len(man["outputs"]), "code_commit": man["code_commit"]}, ensure_ascii=False))
+    return 0
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    from wp.manifest import verify
+
+    rep = verify(args.data_dir, args.start, args.end)
+    print(json.dumps(rep, ensure_ascii=False))
+    return 0 if rep["ok"] else 2
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -97,12 +122,31 @@ def main(argv: list[str] | None = None) -> int:
     p_slice.add_argument("--fetch-start", default=None, help="取数起点（默认=start）")
     p_slice.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
     p_slice.add_argument("--no-margin", action="store_true", help="跳过两融（省时间）")
+    p_slice.add_argument("--no-moneyflow", action="store_true", help="跳过资金流（F5 将为 NaN）")
     p_slice.set_defaults(func=cmd_slice)
 
     p_site = sub.add_parser("build-site", help="metrics.csv -> 前端 JSON")
     p_site.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
     p_site.add_argument("--out", default=str(C.PROJECT_ROOT / "web" / "public" / "data"))
     p_site.set_defaults(func=cmd_build_site)
+
+    p_daily = sub.add_parser("daily", help="每日增量：只重算最近窗口并合并历史")
+    p_daily.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_daily.add_argument("--date", default=None, help="交易日 YYYY-MM-DD；默认最近开市日")
+    p_daily.add_argument("--window", type=int, default=100, help="取数窗口（交易日）")
+    p_daily.set_defaults(func=cmd_daily)
+
+    p_man = sub.add_parser("manifest", help="生成 init_manifest.json")
+    p_man.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_man.add_argument("--start", default="2016-01-04")
+    p_man.add_argument("--end", required=True)
+    p_man.set_defaults(func=cmd_manifest)
+
+    p_ver = sub.add_parser("verify", help="覆盖/不变量检查")
+    p_ver.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_ver.add_argument("--start", default="2016-01-04")
+    p_ver.add_argument("--end", required=True)
+    p_ver.set_defaults(func=cmd_verify)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

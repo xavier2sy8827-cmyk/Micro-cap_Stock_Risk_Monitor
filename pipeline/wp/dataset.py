@@ -20,11 +20,16 @@ class Slice:
     days: list[str]
     close: pd.DataFrame
     pre_close: pd.DataFrame
+    open: pd.DataFrame
+    high: pd.DataFrame
+    low: pd.DataFrame
     amount: pd.DataFrame
     total_mv: pd.DataFrame
     circ_mv: pd.DataFrame
     turnover: pd.DataFrame
     pb: pd.DataFrame
+    dv_ttm: pd.DataFrame
+    small_net: pd.DataFrame
     qfq: pd.DataFrame
     qfq_ffill: pd.DataFrame
     ma20: pd.DataFrame
@@ -134,6 +139,7 @@ def load_slice(
     end: str,
     fetch_start: str | None = None,
     include_margin: bool = True,
+    include_moneyflow: bool = True,
 ) -> Slice:
     """取 [fetch_start, end] 的日频数据，构建宽表、两个池、行业与层级。
 
@@ -148,6 +154,7 @@ def load_slice(
     basic = _fetch_by_day(client, days, client.daily_basic, "daily_basic")
     st = _fetch_by_day(client, days, client.stock_st, "stock_st")
     margin = _fetch_by_day(client, days, client.margin_detail, "margin") if include_margin else {}
+    flow = _fetch_by_day(client, days, client.moneyflow, "moneyflow") if include_moneyflow else {}
 
     idx = {}
     for key, code in C.INDEX_CODES.items():
@@ -162,12 +169,24 @@ def load_slice(
     # ---- 宽表 ----
     close = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "close"), days)
     pre = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "pre_close"), days)
+    openp = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "open"), days)
+    highp = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "high"), days)
+    lowp = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "low"), days)
     amount = _reindex(_pivot(pd.concat(daily.values(), ignore_index=True), "amount"), days)
     bdf = pd.concat(basic.values(), ignore_index=True)
     total_mv = _reindex(_pivot(bdf, "total_mv"), days).ffill()
     circ_mv = _reindex(_pivot(bdf, "circ_mv"), days).ffill()
     turnover = _reindex(_pivot(bdf, "turnover_rate"), days)
     pb = _reindex(_pivot(bdf, "pb"), days)
+    dv_ttm = _reindex(_pivot(bdf, "dv_ttm"), days)
+    if flow:
+        fdf = pd.concat(flow.values(), ignore_index=True)
+        small_net = _reindex(_pivot(fdf, "buy_sm_amount"), days) - _reindex(
+            _pivot(fdf, "sell_sm_amount"), days
+        )
+    else:
+        small_net = pd.DataFrame(np.nan, index=pd.to_datetime(days), columns=close.columns)
+    del daily, basic, flow, bdf
 
     qfq = S.qfq_chain(close, pre)
     qfq_ffill = S.ffill_to_days(qfq, days)
@@ -248,11 +267,16 @@ def load_slice(
         days=days,
         close=close,
         pre_close=pre,
+        open=openp,
+        high=highp,
+        low=lowp,
         amount=amount,
         total_mv=total_mv,
         circ_mv=circ_mv,
         turnover=turnover,
         pb=pb,
+        dv_ttm=dv_ttm,
+        small_net=small_net,
         qfq=qfq,
         qfq_ffill=qfq_ffill,
         ma20=ma20,

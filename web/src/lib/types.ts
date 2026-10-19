@@ -76,3 +76,38 @@ export interface Margin {
   wp400_ratio: Num[]
   wp400_n: Num[]
 }
+
+export interface FactorStates {
+  state: Num[]
+  L: Num[]
+  D: Num[]
+  R: Num[]
+  F: Num[]
+  judge_nan: Num[]
+}
+
+export interface FactorEvent {
+  factor: string
+  event_date: string
+  confirm_date?: string | null
+  end_date?: string | null
+  confirmed?: boolean | string
+  depth?: number | null
+  sigma_mult?: number | null
+  days?: number | null
+  reason?: string | null
+}
+
+export interface Factors {
+  dates: string[]
+  factors: string[]
+  names: Record<string, string>
+  states: Record<string, FactorStates>
+  ic: Record<string, Num[]>
+  ic_mean_252: Record<string, Num[]>
+  icir_252: Record<string, Num[]>
+  ls_nav: Record<string, Num[]>
+  events: FactorEvent[]
+  tail_gap: number
+  updated_through?: string | null
+}
