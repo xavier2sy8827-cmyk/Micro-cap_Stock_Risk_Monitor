@@ -79,7 +79,7 @@ export default function App() {
     <div className="app">
       <header className="head">
         <h1>微盘风险与监控</h1>
-        <span className="meta">M0 · 站点骨架</span>
+        <span className="meta">M0 · Pages 验证</span>
         <span className="spacer" />
         <button
           className="linkbtn"
