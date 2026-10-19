@@ -139,7 +139,7 @@ def pb_spread(
     for d in common_idx:
         p = pb.loc[d]
         m = total_mv.loc[d]
-        df = pd.DataFrame({"pb": p, "mv": m}).dropna(subset=["mv"])
+        df = pd.DataFrame({"pb": p, "mv": m}).dropna(subset=["pb", "mv"])
         df = df[df["mv"] > 0]
         n = len(df)
         if n == 0:

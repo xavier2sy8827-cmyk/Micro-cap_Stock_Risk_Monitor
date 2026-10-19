@@ -63,7 +63,7 @@ npm run dev
 - 行业：SW2014（28）→ SW2021（31），`index_member` 区间重建
 - 复权：`close/pre_close` 收益链，不引 `adj_factor`
 
-详细口径与对拍记录在 `docs/`（M2 起补齐）。
+详细口径与对拍记录见 [`docs/METHOD.md`](docs/METHOD.md)，页面规则见 [`docs/UI.md`](docs/UI.md)。
 
 ## 二期（不做）
 

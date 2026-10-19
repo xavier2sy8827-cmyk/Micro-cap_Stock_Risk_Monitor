@@ -14,7 +14,7 @@ export default function MorePage() {
         </Link>
         <Link className="linkrow" to="/factors">
           <span>核心因子</span>
-          <span className="tag">M3</span>
+          <span className="tag">IC / 四态</span>
         </Link>
         <Link className="linkrow" to="/about">
           <span>关于 / 口径 / 数据缺口</span>

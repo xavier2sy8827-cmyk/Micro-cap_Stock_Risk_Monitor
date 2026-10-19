@@ -39,7 +39,7 @@ export default function FactorsPage() {
 
       <ChartCard
         title="四态热力"
-        subtitle="0 健康 / 1 衰减 / 2 拥挤回撤 / 3 失效；空白 = 判据不可判（不显示为健康）"
+        subtitle="0 健康 / 1 失效或衰减 / 2 回撤 / 3 转负；空白 = 判据不可判（不显示为健康）"
         summary="越深 = 状态越差"
         asof={asof}
       >

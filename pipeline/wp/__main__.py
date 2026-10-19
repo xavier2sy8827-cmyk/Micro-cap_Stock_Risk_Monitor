@@ -103,6 +103,13 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0 if rep["ok"] else 2
 
 
+def cmd_rebuild_pb(args: argparse.Namespace) -> int:
+    from wp.rebuild_pb import rebuild
+
+    print(json.dumps(rebuild(args.data_dir), ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="wp", description="微盘监控数据管线")
     parser.add_argument("--version", action="version", version=C.PIPELINE_VERSION)
@@ -147,6 +154,10 @@ def main(argv: list[str] | None = None) -> int:
     p_ver.add_argument("--start", default="2016-01-04")
     p_ver.add_argument("--end", required=True)
     p_ver.set_defaults(func=cmd_verify)
+
+    p_pb = sub.add_parser("rebuild-pb", help="只重算 pb_spread 历史（修复样本口径）")
+    p_pb.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_pb.set_defaults(func=cmd_rebuild_pb)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

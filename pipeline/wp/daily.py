@@ -50,22 +50,35 @@ def _recompute_pct(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _norm_dates(df: pd.DataFrame, col: str = "date") -> pd.DataFrame:
+    """date 统一成 YYYY-MM-DD 字符串，避免 Timestamp/str 混排。"""
+    if df.empty or col not in df.columns:
+        return df
+    out = df.copy()
+    out[col] = pd.to_datetime(out[col], errors="coerce").dt.strftime("%Y-%m-%d")
+    return out
+
+
 def _merge_metrics(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
-    both = pd.concat([hist, new], ignore_index=True).drop_duplicates(subset=["date"], keep="last")
+    both = pd.concat([_norm_dates(hist), _norm_dates(new)], ignore_index=True).drop_duplicates(
+        subset=["date"], keep="last"
+    )
     both = both.sort_values("date").reset_index(drop=True)
     return _recompute_pct(both)
 
 
 def _merge_industry(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
     if hist.empty:
-        return new
-    both = pd.concat([hist, new], ignore_index=True)
+        return _norm_dates(new)
+    both = pd.concat([_norm_dates(hist), _norm_dates(new)], ignore_index=True)
     return both.drop_duplicates(subset=["date", "industry"], keep="last").sort_values(["date", "industry"])
 
 
 def _merge_factors(data_dir: Path, new_ic: pd.DataFrame, new_events: pd.DataFrame) -> dict:
     old_path = data_dir / "factor_ic.csv"
     old = read_csv(old_path) if old_path.exists() else pd.DataFrame()
+    old = _norm_dates(old)
+    new_ic = _norm_dates(new_ic)
     if not old.empty:
         merged = pd.concat(
             [old[~old["date"].isin(set(new_ic["date"]))], new_ic], ignore_index=True
@@ -74,8 +87,8 @@ def _merge_factors(data_dir: Path, new_ic: pd.DataFrame, new_events: pd.DataFram
         merged = new_ic
     merged = merged.drop_duplicates(subset=["date", "factor"], keep="last").sort_values(["date", "factor"])
 
-    ic = merged.pivot(index="date", columns="factor", values="rank_ic")
-    ls = merged.pivot(index="date", columns="factor", values="ls_ret")
+    ic = merged.assign(date=pd.to_datetime(merged["date"])).pivot(index="date", columns="factor", values="rank_ic")
+    ls = merged.assign(date=pd.to_datetime(merged["date"])).pivot(index="date", columns="factor", values="ls_ret")
     st_frames = []
     ev_rows = []
     for f in FACTORS:
@@ -89,6 +102,7 @@ def _merge_factors(data_dir: Path, new_ic: pd.DataFrame, new_events: pd.DataFram
         for e in ev:
             ev_rows.append({"factor": f, **e})
     st_all = pd.concat(st_frames, ignore_index=True) if st_frames else pd.DataFrame()
+    st_all = _norm_dates(st_all)
     if not st_all.empty:
         drop_cols = [
             "L", "D", "R", "F", "state", "R_raw", "ic_pct", "ic_mean_252", "ic_mean_756",
@@ -131,6 +145,7 @@ def run_daily(
     day = to_dash(day)
 
     hist = read_csv(target / "metrics.csv", dtype={"date": str}) if (target / "metrics.csv").exists() else pd.DataFrame()
+    hist = _norm_dates(hist)
     if not hist.empty and str(hist["date"].max()) >= day:
         print(f"[daily] {day} 已存在，跳过")
         return {"status": "noop", "data_through": day}
@@ -160,6 +175,8 @@ def run_daily(
 
     sl = load_slice(client, start=fetch_start, end=day, fetch_start=fetch_start)
     metrics_new, ind_new = compute_metrics(sl)
+    metrics_new = _norm_dates(metrics_new)
+    ind_new = _norm_dates(ind_new)
     new_dates = set(metrics_new["date"].astype(str)) - set(hist["date"].astype(str)) if not hist.empty else set(
         metrics_new["date"].astype(str)
     )
@@ -168,6 +185,7 @@ def run_daily(
         return {"status": "noop", "data_through": day}
     metrics = _merge_metrics(hist, metrics_new) if not hist.empty else _recompute_pct(metrics_new)
     ind_hist = read_csv(target / "industry_breadth.csv", dtype={"date": str}) if (target / "industry_breadth.csv").exists() else pd.DataFrame()
+    ind_hist = _norm_dates(ind_hist)
     ind = _merge_industry(ind_hist, ind_new[ind_new["date"].astype(str).isin(new_dates)])
     write_csv(metrics, target / "metrics.csv")
     write_csv(ind, target / "industry_breadth.csv")

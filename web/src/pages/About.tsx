@@ -3,6 +3,7 @@ import { PageTitle } from '../ui'
 
 export default function AboutPage() {
   const meta = useMeta()
+  const full = (meta?.days ?? 0) > 1000
   return (
     <>
       <PageTitle title="关于" desc="口径、数据状态与二期说明" />
@@ -16,15 +17,20 @@ export default function AboutPage() {
           <li>行业版本：{meta?.industry_version ?? '—'}</li>
           <li>交易日数：{meta?.days ?? '—'}</li>
           <li>生成时间：{meta?.generated_at ?? '—'}</li>
+          <li>更新方式：`data` 分支 + 每个交易日 17:00 GitHub Actions 增量</li>
         </ul>
       </div>
 
       <div className="note">
         <h2>当前限制</h2>
         <ul>
-          <li>本版是近端切片（约 2 年），不是 2016 起全量；全量 INIT 在 M4 完成后替换。</li>
-          <li>因子四态、两融（若切片未含）、5 年分位在切片阶段可能为空或不完整。</li>
+          {full ? (
+            <li>全量数据从 2016-01-04 起；2016 年初的分位、IC 均值、756 日判据仍在预热，空白属正常。</li>
+          ) : (
+            <li>当前是近端切片（少于 1000 个交易日），不是 2016 起全量；全量 INIT 替换后此提示消失。</li>
+          )}
           <li>图默认 52 周；分位为 250 日滚动，早期窗口为空属预热。</li>
+          <li>因子 IC 使用 20 日前瞻收益，最后 20 个交易日不可判，页面留空而不是显示“健康”。</li>
         </ul>
       </div>
 
@@ -40,11 +46,10 @@ export default function AboutPage() {
       ) : null}
 
       <div className="note">
-        <h2>二期</h2>
+        <h2>二期（不做）</h2>
         <ul>
-          <li>因子四态与事件表（M3）</li>
-          <li>全量 2016 起 INIT 与每日 cron（M4/M5）</li>
-          <li>盘中刷新、IM、估值与宏观分类</li>
+          <li>IM 贴水、宏观/信用利差、估值页</li>
+          <li>盘中刷新、选股/持仓/组合</li>
         </ul>
       </div>
     </>
