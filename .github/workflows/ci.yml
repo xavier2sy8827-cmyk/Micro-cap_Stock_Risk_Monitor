@@ -59,4 +59,4 @@ jobs:
 
       - name: Test
         working-directory: pipeline
-        run: pytest
+        run: python -m pytest
