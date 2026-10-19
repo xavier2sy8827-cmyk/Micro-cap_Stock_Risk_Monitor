@@ -172,7 +172,6 @@ def build_universe(
     turnover_rate, pb, dv_ttm, st, delist_period, is_star, valuation_date, valuation_stale。
     """
     day = to_dash(trade_date)
-    d = to_compact(day)
     prev = client.prev_trade_day(day)
     info = st_info or load_st_info(client, prev)
 

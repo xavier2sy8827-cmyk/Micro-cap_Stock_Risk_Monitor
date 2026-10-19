@@ -7,6 +7,7 @@ web/public/data/
 __pycache__/
 *.py[cod]
 .venv/
+.venv-ci/
 venv/
 .pytest_cache/
 .ruff_cache/
