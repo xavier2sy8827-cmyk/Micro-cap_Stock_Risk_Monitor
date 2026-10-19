@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from wp import series as S  # noqa: E402
 from wp.checks import read_csv, write_csv  # noqa: E402
-from wp.daily import _merge_factors, _merge_metrics, _recompute_pct  # noqa: E402
+from wp.daily import _merge_factors, _recompute_pct  # noqa: E402
 
 GAP_START = "2026-05-25"
 GAP_END = "2026-06-17"
