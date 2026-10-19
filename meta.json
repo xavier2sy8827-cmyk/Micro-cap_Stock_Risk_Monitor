@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-19 16:44:37",
+  "source": "tushare",
+  "slice_start": "2026-04-01",
+  "slice_end": "2026-10-16",
+  "days": 130,
+  "data_through": "2026-10-15",
+  "warnings": [],
+  "factor_ic_through": "2026-09-09",
+  "factor_panel_rows": 31784,
+  "pipeline_version": "0.1.0",
+  "calls": {
+    "calls": {
+      "trade_cal": 1,
+      "daily": 132,
+      "daily_basic": 132,
+      "stock_st": 132,
+      "moneyflow": 132,
+      "index_daily": 4,
+      "stock_basic": 3,
+      "namechange": 2,
+      "index_classify": 2,
+      "index_member": 59
+    },
+    "attempts": {
+      "trade_cal": 1,
+      "daily": 132,
+      "daily_basic": 132,
+      "stock_st": 132,
+      "moneyflow": 132,
+      "index_daily": 4,
+      "stock_basic": 3,
+      "namechange": 2,
+      "index_classify": 2,
+      "index_member": 59
+    },
+    "total": 599
+  },
+  "duration_sec": 258.7,
+  "margin_through": "2026-10-15"
+}
