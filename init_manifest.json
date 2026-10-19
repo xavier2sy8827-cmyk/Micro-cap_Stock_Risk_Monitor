@@ -1,6 +1,6 @@
 {
-  "created_at": "2026-10-19 19:25:34",
-  "code_commit": "94520d4f728047db8276e4399af377584dfd5874",
+  "created_at": "2026-10-19 20:59:26",
+  "code_commit": "8a2f81e8ea56e72b148f5beba033e95f0fcaf5aa",
   "python": "3.12.12",
   "platform": "Windows-11-10.0.26200-SP0",
   "packages": {
@@ -16,32 +16,32 @@
     {
       "path": "metrics.csv",
       "rows": 2619,
-      "bytes": 2724836,
-      "sha256": "55da76b7df8e9d279ed653a25a82b4f6c275ad69e0cc0dc2ddf4fe3b31d90d98"
+      "bytes": 2729199,
+      "sha256": "7b43e20f8208a78c0b35c603107fa595d93e9ae3bb27139e445ef1baf1fd4dd3"
     },
     {
       "path": "industry_breadth.csv",
       "rows": 77535,
       "bytes": 2749230,
-      "sha256": "a9330113c9fb2724efa4d0f3d9af9903dfc8b9b6275c0032bbf92ce03cfc5c5b"
+      "sha256": "73aab6c106f97a00024e9a1591433d2a3310af96ec71caa20b9e580eff7d3ed4"
     },
     {
       "path": "factor_ic.csv",
       "rows": 13095,
-      "bytes": 2011861,
-      "sha256": "329a92a314ccca2c15b56d318ce027a7df9625f522196d48562f66a2f21cdb19"
+      "bytes": 2013250,
+      "sha256": "fa3833cd0cbbf45b8032e65df936971c2bf7495ba131fe60f52cc883cf4292fc"
     },
     {
       "path": "factor_states.csv",
       "rows": 13095,
-      "bytes": 1853927,
-      "sha256": "662b1ba3701495df4dc7c0616e045e692c86b2209769d4304c242405fd976a78"
+      "bytes": 1854791,
+      "sha256": "53fa05c6965d3afc3fdfed2003c2fb81ff9b8d0c83de49fc1ecc3a0599f88059"
     },
     {
       "path": "factor_events.csv",
       "rows": 21,
       "bytes": 2295,
-      "sha256": "bef02e5aa2e9b50a9c7895189fa78e1545dcac6bad7d51dcfa75068e6ca1e842"
+      "sha256": "567d7e31465a20c286a9057f83bb1349af6efa41260959df0f7c243fc66e15e8"
     }
   ],
   "tushare_schema_snapshot": {
