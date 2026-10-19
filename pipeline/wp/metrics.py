@@ -121,7 +121,7 @@ def compute_metrics(sl: Slice) -> tuple[pd.DataFrame, pd.DataFrame]:
     for name in ("300", "500", "1000", "2000", "wp400"):
         share = out[f"money_{name}"] / out["all_money"] * 100.0
         out[f"share_{name}"] = share
-        out[f"share_{name}_pct"], out[f"share_{name}_pct_exp"] = _pct_pair(share, 250, 120)
+        out[f"share_{name}_pct"], out[f"share_{name}_pct_exp"] = _pct_pair(share, 250, 250)
     for key, name in (("csi300", "300"), ("csi500", "500"), ("csi1000", "1000"), ("gz2000", "2000")):
         r = sl.index_ret.get(key, pd.Series(np.nan, index=idx)).reindex(idx)
         out[f"ret_ma5_{name}"] = r.rolling(5).mean() * 100.0
