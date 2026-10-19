@@ -1,0 +1,157 @@
+{
+  "created_at": "2026-10-19 18:57:11",
+  "code_commit": "f7c28462babdc688ebc79158fcf059877072293c",
+  "python": "3.12.12",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "packages": {
+    "pandas": "3.0.1",
+    "numpy": "2.4.2",
+    "tushare": "1.4.29"
+  },
+  "init_start": "2016-01-04",
+  "init_end": "2026-10-19",
+  "data_through": "2026-10-19",
+  "pipeline_version": "0.1.0",
+  "outputs": [
+    {
+      "path": "metrics.csv",
+      "rows": 2619,
+      "bytes": 2724836,
+      "sha256": "55da76b7df8e9d279ed653a25a82b4f6c275ad69e0cc0dc2ddf4fe3b31d90d98"
+    },
+    {
+      "path": "industry_breadth.csv",
+      "rows": 77535,
+      "bytes": 2749230,
+      "sha256": "a9330113c9fb2724efa4d0f3d9af9903dfc8b9b6275c0032bbf92ce03cfc5c5b"
+    },
+    {
+      "path": "factor_ic.csv",
+      "rows": 13095,
+      "bytes": 2011861,
+      "sha256": "329a92a314ccca2c15b56d318ce027a7df9625f522196d48562f66a2f21cdb19"
+    },
+    {
+      "path": "factor_states.csv",
+      "rows": 13095,
+      "bytes": 1853927,
+      "sha256": "662b1ba3701495df4dc7c0616e045e692c86b2209769d4304c242405fd976a78"
+    },
+    {
+      "path": "factor_events.csv",
+      "rows": 21,
+      "bytes": 2295,
+      "sha256": "bef02e5aa2e9b50a9c7895189fa78e1545dcac6bad7d51dcfa75068e6ca1e842"
+    }
+  ],
+  "tushare_schema_snapshot": {
+    "trade_cal": [
+      "cal_date",
+      "is_open"
+    ],
+    "stock_basic": [
+      "ts_code",
+      "name",
+      "market",
+      "list_date",
+      "delist_date"
+    ],
+    "stock_st": [
+      "ts_code",
+      "name",
+      "trade_date",
+      "type"
+    ],
+    "namechange": [
+      "ts_code",
+      "name",
+      "start_date",
+      "end_date",
+      "change_reason"
+    ],
+    "daily": [
+      "ts_code",
+      "trade_date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "pre_close",
+      "amount"
+    ],
+    "daily_basic": [
+      "ts_code",
+      "trade_date",
+      "turnover_rate",
+      "pb",
+      "total_mv",
+      "circ_mv",
+      "dv_ttm"
+    ],
+    "moneyflow": [
+      "ts_code",
+      "trade_date",
+      "buy_sm_amount",
+      "sell_sm_amount"
+    ],
+    "margin_detail": [
+      "trade_date",
+      "ts_code",
+      "rzye",
+      "rzmre"
+    ],
+    "index_daily": [
+      "ts_code",
+      "trade_date",
+      "close",
+      "pre_close",
+      "amount"
+    ],
+    "index_classify": [
+      "index_code",
+      "industry_name",
+      "level",
+      "src"
+    ],
+    "index_member": [
+      "index_code",
+      "con_code",
+      "in_date",
+      "out_date",
+      "is_new"
+    ]
+  },
+  "calls": {
+    "calls": {
+      "trade_cal": 3,
+      "daily": 100,
+      "daily_basic": 100,
+      "stock_st": 100,
+      "margin_detail": 100,
+      "moneyflow": 100,
+      "index_daily": 4,
+      "stock_basic": 3,
+      "namechange": 2,
+      "index_classify": 2,
+      "index_member": 59
+    },
+    "attempts": {
+      "trade_cal": 3,
+      "daily": 100,
+      "daily_basic": 100,
+      "stock_st": 100,
+      "margin_detail": 100,
+      "moneyflow": 100,
+      "index_daily": 4,
+      "stock_basic": 3,
+      "namechange": 2,
+      "index_classify": 2,
+      "index_member": 59
+    },
+    "total": 573
+  },
+  "duration_sec": 244.2,
+  "warnings": [],
+  "degraded": [],
+  "factor_ic_through": "2026-09-11"
+}

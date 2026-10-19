@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-10-19 18:57:12",
+  "start": "2016-01-04",
+  "end": "2026-10-19",
+  "rows": 2619,
+  "date_min": "2016-01-04",
+  "date_max": "2026-10-19",
+  "missing_days": 0,
+  "duplicates": 0,
+  "pool_bad_days": 0,
+  "factor_ok": true,
+  "issues": [],
+  "ok": true
+}
