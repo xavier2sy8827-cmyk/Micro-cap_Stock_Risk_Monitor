@@ -40,8 +40,8 @@ npm run dev
 
 ## 部署与数据更新
 
-- 推送到 `main`（或 `data`）触发 `.github/workflows/deploy.yml`：checkout `data` 分支 → `python -m wp build-site` → 构建 `web/` → 发布 Pages。
-- 每个交易日 17:00（北京时间）`.github/workflows/daily.yml` 增量更新最近窗口，提交到 `data` 分支后自动部署。
+- 推送到 `main` 触发 `.github/workflows/deploy.yml`：checkout `data` 分支 → `python -m wp build-site` → 构建 `web/` → 发布 Pages。
+- 每个交易日 17:00（北京时间）`.github/workflows/daily.yml` 增量更新最近窗口，提交到 `data` 分支后调用 deploy 发布。
 - 需要重建全量历史时手动跑 `.github/workflows/backfill.yml`（输出起点 2016-01-04，预热起点 2015-09-01）。
 
 首次使用需在仓库设置中完成（缺一不可）：
