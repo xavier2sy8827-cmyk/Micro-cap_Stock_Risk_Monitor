@@ -11,7 +11,7 @@ export default function AboutPage() {
       <div className="note">
         <h2>数据状态</h2>
         <ul>
-          <li>数据源：Tushare Pro（仅 `TUSHARE_TOKEN`，不依赖本地数据库）</li>
+          <li>数据源：Tushare Pro（仅 TUSHARE_TOKEN，不依赖本地数据库）</li>
           <li>数据截至：{meta?.data_through ?? '—'}</li>
           <li>两融截至：{meta?.margin_through ?? '（本切片未含）'}</li>
           <li>行业版本：{meta?.industry_version ?? '—'}</li>
