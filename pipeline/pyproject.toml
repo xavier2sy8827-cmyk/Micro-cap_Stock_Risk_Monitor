@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+# 先只查语法/未定义名称，避免本地无法验证时用风格规则卡住 CI；后续再逐步收紧。
+select = ["E9", "F"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

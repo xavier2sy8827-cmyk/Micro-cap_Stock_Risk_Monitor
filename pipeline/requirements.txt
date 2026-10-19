@@ -1,0 +1,8 @@
+# 数据管线依赖（本地 INIT 与 GitHub Actions 共用；版本必须一致）
+tushare==1.4.29
+pandas==3.0.1
+numpy==2.4.2
+
+# 开发/CI
+pytest==8.3.4
+ruff==0.8.4
