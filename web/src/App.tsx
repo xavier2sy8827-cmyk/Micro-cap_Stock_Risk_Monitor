@@ -86,7 +86,7 @@ export default function App() {
         </main>
 
         <footer className="foot">
-          <span>数据源 Tushare · {meta?.generated_at ?? '—'}</span>
+          <span>数据源 Tushare · 构建 {meta?.generated_at ?? '—'}（北京时间）</span>
           <span>{meta?.days ? `${meta.days} 交易日` : '—'}</span>
         </footer>
 

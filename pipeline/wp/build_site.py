@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -166,9 +166,11 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
 
     last = m.iloc[-1]
     margin_through = _last_date(_col(m, "margin_pool_ratio"), dates)
+    cst = timezone(timedelta(hours=8))
     meta = {
         "schema_version": 1,
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_at": datetime.now(cst).strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_tz": "Asia/Shanghai",
         "data_through": str(last["date"]),
         "margin_through": margin_through,
         "factor_ic_through": meta_src.get("factor_ic_through"),

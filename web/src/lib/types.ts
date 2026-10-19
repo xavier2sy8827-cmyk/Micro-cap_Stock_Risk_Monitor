@@ -20,6 +20,7 @@ export interface Signal {
 export interface Meta {
   schema_version: number
   generated_at: string
+  generated_tz?: string
   data_through: string
   margin_through?: string | null
   factor_ic_through?: string | null

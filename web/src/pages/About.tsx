@@ -16,7 +16,7 @@ export default function AboutPage() {
           <li>两融截至：{meta?.margin_through ?? '（本切片未含）'}</li>
           <li>行业版本：{meta?.industry_version ?? '—'}</li>
           <li>交易日数：{meta?.days ?? '—'}</li>
-          <li>生成时间：{meta?.generated_at ?? '—'}</li>
+          <li>生成时间：{meta?.generated_at ?? '—'}（北京时间）</li>
           <li>更新方式：`data` 分支 + 每个交易日 17:00 GitHub Actions 增量</li>
         </ul>
       </div>
