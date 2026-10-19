@@ -20,6 +20,14 @@ def _factor_ic_long(result) -> pd.DataFrame:
     return factor_ic_long(result)
 
 
+def _trim(df: pd.DataFrame, col: str, start: str) -> pd.DataFrame:
+    """输出起点裁掉 fetch_start 预热段（指标仍用预热数据计算）。"""
+    if df.empty or col not in df.columns:
+        return df
+    keep = df[col].astype(str).str[:10] >= start
+    return df[keep].reset_index(drop=True)
+
+
 def run_slice(
     start: str,
     end: str,
@@ -40,27 +48,35 @@ def run_slice(
     )
     print(f"[slice] loaded {len(sl.days)} days, {len(sl.close.columns)} codes, {client.stats()['total']} calls")
     metrics, ind = compute_metrics(sl)
+    panel_idx = pd.to_datetime(metrics["date"])
+
+    factor_meta = {}
+    fic = fst = None
+    fres = None
+    if include_moneyflow and not sl.small_net.empty:
+        fres = compute_factors(sl, panel_idx)
+        if fres.panel_rows:
+            fic = _trim(_factor_ic_long(fres), "date", start)
+            fst = _trim(states_long(fres), "date", start)
+
+    metrics = _trim(metrics, "date", start)
+    ind = _trim(ind, "date", start)
     target = Path(data_dir)
     target.mkdir(parents=True, exist_ok=True)
     write_csv(metrics, target / "metrics.csv")
     write_csv(ind, target / "industry_breadth.csv")
 
-    factor_meta = {}
-    if include_moneyflow and not sl.small_net.empty:
-        panel_idx = pd.to_datetime(metrics["date"])
-        fres = compute_factors(sl, panel_idx)
-        if fres.panel_rows:
-            fic = _factor_ic_long(fres)
-            fst = states_long(fres)
-            write_csv(fic, target / "factor_ic.csv")
-            write_csv(fst, target / "factor_states.csv")
-            write_csv(fres.events, target / "factor_events.csv")
-            valid_ic = fic.dropna(subset=["rank_ic"])["date"]
-            factor_meta = {
-                "factor_ic_through": str(valid_ic.max()) if len(valid_ic) else None,
-                "factor_panel_rows": fres.panel_rows,
-            }
-            print(f"[slice] factors panel={fres.panel_rows} ic_through={factor_meta['factor_ic_through']}")
+    if fic is not None and fst is not None:
+        events = _trim(fres.events, "event_date", start)
+        write_csv(fic, target / "factor_ic.csv")
+        write_csv(fst, target / "factor_states.csv")
+        write_csv(events, target / "factor_events.csv")
+        valid_ic = fic.dropna(subset=["rank_ic"])["date"]
+        factor_meta = {
+            "factor_ic_through": str(valid_ic.max()) if len(valid_ic) else None,
+            "factor_panel_rows": fres.panel_rows,
+        }
+        print(f"[slice] factors panel={fres.panel_rows} ic_through={factor_meta['factor_ic_through']}")
 
     through = str(metrics["date"].max())[:10] if len(metrics) else end
     meta = run_meta(start, end, len(metrics), through, sl.warnings)

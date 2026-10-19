@@ -2,11 +2,7 @@ name: deploy
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'web/**'
-      - 'pipeline/**'
-      - '.github/workflows/deploy.yml'
+    branches: [main, data]
   workflow_dispatch:
   workflow_call:
 

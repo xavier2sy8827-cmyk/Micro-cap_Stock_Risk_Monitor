@@ -11,7 +11,7 @@
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| M0 | 仓库骨架 + 最小站点 + Pages 部署链路 | 代码完成；**Pages 待你在仓库设置中启用** |
+| M0 | 仓库骨架 + 最小站点 + Pages 部署链路 | 完成（Pages 已上线） |
 | M1 | 数据骨架：Tushare 客户端、两个池、格式基线、CI | 完成（18 项单测通过、CI 绿） |
 | M2 | 非因子指标 + 7 个监控页面 | 完成（近端 2 年切片；全量等 M4） |
 | M3 | 核心因子监控（IC / 多空 / 四态） | 完成（近端切片验证；全量等 M4） |
@@ -25,8 +25,10 @@ web/                     React + Vite + TypeScript 站点
 pipeline/wp/             Python 数据管线（M1 起填充）
 scripts/                 对拍与运维脚本
 docs/                    口径、对拍、二期说明
-.github/workflows/       deploy / ci（后续加 daily、backfill、refresh-ref）
+.github/workflows/       deploy / ci / daily / backfill
 ```
+
+数据不放在 `main`：`main` 只管代码，CSV 存在 orphan 分支 `data`，部署时 checkout `data` 再生成 JSON。
 
 ## 本地开发
 
@@ -36,9 +38,12 @@ npm ci
 npm run dev
 ```
 
-## 部署
+## 部署与数据更新
 
-推送到 `main` 触发 `.github/workflows/deploy.yml`，构建 `web/` 并发布到 GitHub Pages。
+- 推送到 `main`（或 `data`）触发 `.github/workflows/deploy.yml`：checkout `data` 分支 → `python -m wp build-site` → 构建 `web/` → 发布 Pages。
+- 每个交易日 17:00（北京时间）`.github/workflows/daily.yml` 增量更新最近窗口，提交到 `data` 分支后自动部署。
+- 需要重建全量历史时手动跑 `.github/workflows/backfill.yml`（输出起点 2016-01-04，预热起点 2015-09-01）。
+
 首次使用需在仓库设置中完成（缺一不可）：
 
 1. **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**
