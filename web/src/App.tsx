@@ -1,50 +1,16 @@
 import { useEffect, useState } from 'react'
-
-type Tab = {
-  key: string
-  label: string
-  hint: string
-  items: string[]
-}
-
-const TABS: Tab[] = [
-  {
-    key: 'overview',
-    label: '总览',
-    hint: '信号灯墙',
-    items: ['微盘400 宽度分位', '估值价差 / 截面相关 / 多空波动比', 'qs_share', '两融池占比', '5 因子四态计数'],
-  },
-  {
-    key: 'crowding',
-    label: '拥挤度',
-    hint: '宽度 / 三维度 / qs',
-    items: ['微盘400 扩散指数 + 分位', 'pb_spread', 'corr60_wp400', 'ls_vol_ratio', 'qs_share'],
-  },
-  {
-    key: 'alla',
-    label: '全A',
-    hint: '结构',
-    items: ['申万一级行业扩散热力', '前 5% / 10% 成交额集中度', '五层成交额占比 + 750 日分位', '各层收益 MA5'],
-  },
-  {
-    key: 'layers',
-    label: '内部',
-    hint: '10 层',
-    items: ['L1–L10 扩散分位', 'L1–L10 收益 MA5', '哪一层在赚钱'],
-  },
-  {
-    key: 'factors',
-    label: '因子',
-    hint: '四态',
-    items: ['F1 SIZE / F2 DIV / F3 AMPL', 'F4 INTRA_REV / F5 RESID_REV', 'IC / 多空净值 / 四态', '预警事件与尾部不可判'],
-  },
-  {
-    key: 'more',
-    label: '更多',
-    hint: '两融 / 关于',
-    items: ['两融池占比（circ-1000，T-1）', 'wp400 观察值', '口径与数据来源', '缺口与降级记录'],
-  },
-]
+import { NavLink, Route, Routes } from 'react-router-dom'
+import { useJson } from './lib/data'
+import type { Meta } from './lib/types'
+import { MetaProvider } from './meta'
+import AboutPage from './pages/About'
+import AllAPage from './pages/AllA'
+import CrowdingPage from './pages/Crowding'
+import FactorsPage from './pages/Factors'
+import LayersPage from './pages/Layers'
+import MarginPage from './pages/Margin'
+import MorePage from './pages/More'
+import Overview from './pages/Overview'
 
 type Theme = 'light' | 'dark'
 
@@ -57,9 +23,17 @@ function readTheme(): Theme | null {
   }
 }
 
+const NAV = [
+  { to: '/', label: '总览', end: true },
+  { to: '/crowding', label: '拥挤度' },
+  { to: '/alla', label: '全A' },
+  { to: '/layers', label: '内部' },
+  { to: '/more', label: '更多' },
+]
+
 export default function App() {
-  const [tab, setTab] = useState<string>('overview')
   const [theme, setTheme] = useState<Theme | null>(() => readTheme())
+  const { data: meta, error, loading } = useJson<Meta>('meta.json')
 
   useEffect(() => {
     const root = document.documentElement
@@ -73,95 +47,57 @@ export default function App() {
     }
   }, [theme])
 
-  const active = TABS.find((t) => t.key === tab) ?? TABS[0]
-
   return (
-    <div className="app">
-      <header className="head">
-        <h1>微盘风险与监控</h1>
-        <span className="meta">M0 · Pages 验证</span>
-        <span className="spacer" />
-        <button
-          className="linkbtn"
-          type="button"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title="切换浅色 / 深色"
-        >
-          主题
-        </button>
-      </header>
-
-      <div className="banner">
-        数据管线尚未接入：本页只验证 GitHub Pages、移动端布局与主题。指标将在 M2 起接入。
-      </div>
-
-      <section className="kpi" aria-label="关键指标占位">
-        <div className="cell">
-          <div className="lab">宽度分位</div>
-          <div className="val">—</div>
-          <div className="sub">待接入</div>
-        </div>
-        <div className="cell">
-          <div className="lab">估值价差</div>
-          <div className="val">—</div>
-          <div className="sub">待接入</div>
-        </div>
-        <div className="cell">
-          <div className="lab">截面相关</div>
-          <div className="val">—</div>
-          <div className="sub">待接入</div>
-        </div>
-        <div className="cell">
-          <div className="lab">多空波动比</div>
-          <div className="val">—</div>
-          <div className="sub">待接入</div>
-        </div>
-      </section>
-
-      <nav className="tabs" role="tablist" aria-label="监控页面">
-        {TABS.map((t) => (
+    <MetaProvider value={meta}>
+      <div className="app">
+        <header className="head">
+          <h1>微盘风险与监控</h1>
+          <span className="meta">
+            {loading ? '数据加载中' : meta ? `数据 ${meta.data_through}` : '数据未就绪'}
+          </span>
+          <span className="spacer" />
           <button
-            key={t.key}
-            role="tab"
-            aria-selected={t.key === active.key}
-            className={t.key === active.key ? 'tab on' : 'tab'}
+            className="linkbtn"
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title="切换浅色 / 深色"
           >
-            {t.label}
+            主题
           </button>
-        ))}
-      </nav>
+        </header>
 
-      <section className="panel" role="tabpanel">
-        <div className="panel-head">
-          <strong>{active.label}</strong>
-          <span>{active.hint}</span>
-        </div>
-        <ul className="plan">
-          {active.items.map((x) => (
-            <li key={x}>
-              <span>{x}</span>
-              <span className="tag">待接入</span>
-            </li>
+        {error ? <div className="banner">元数据加载失败：{error}</div> : null}
+        {meta && meta.margin_through && meta.margin_through !== meta.data_through ? (
+          <div className="subtle">两融数据截至 {meta.margin_through}（T-1 发布）</div>
+        ) : null}
+
+        <main className="main">
+          <Routes>
+            <Route path="/" element={<Overview />} />
+            <Route path="/crowding" element={<CrowdingPage />} />
+            <Route path="/alla" element={<AllAPage />} />
+            <Route path="/layers" element={<LayersPage />} />
+            <Route path="/margin" element={<MarginPage />} />
+            <Route path="/factors" element={<FactorsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/more" element={<MorePage />} />
+            <Route path="*" element={<Overview />} />
+          </Routes>
+        </main>
+
+        <footer className="foot">
+          <span>数据源 Tushare · {meta?.generated_at ?? '—'}</span>
+          <span>{meta?.days ? `${meta.days} 交易日` : '—'}</span>
+        </footer>
+
+        <nav className="nav" aria-label="主导航">
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'on' : '')}>
+              {n.label}
+            </NavLink>
           ))}
-        </ul>
-      </section>
-
-      <section className="note">
-        <h2>部署自检</h2>
-        <ul>
-          <li>仓库：xavier2sy8827-cmyk/Micro-cap_Stock_Risk_Monitor</li>
-          <li>站点：/Micro-cap_Stock_Risk_Monitor/（HashRouter）</li>
-          <li>数据源：Tushare Pro（M1 接入）</li>
-          <li>一期范围：纯监控，不含选股 / 持仓 / 盘中刷新</li>
-        </ul>
-      </section>
-
-      <footer className="foot">
-        <span>数据源 Tushare · 更新于 —</span>
-        <span>构建 M0</span>
-      </footer>
-    </div>
+        </nav>
+      </div>
+    </MetaProvider>
   )
 }

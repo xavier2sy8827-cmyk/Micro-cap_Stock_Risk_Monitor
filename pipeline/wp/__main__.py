@@ -7,6 +7,8 @@ import json
 from datetime import date
 
 from wp import config as C
+from wp.build_site import build as build_site
+from wp.pipeline import run_slice
 from wp.ts_client import TsClient
 from wp.universe import build_pool
 
@@ -58,6 +60,24 @@ def cmd_pools(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_slice(args: argparse.Namespace) -> int:
+    meta = run_slice(
+        start=args.start,
+        end=args.end,
+        fetch_start=args.fetch_start,
+        data_dir=args.data_dir,
+        include_margin=not args.no_margin,
+    )
+    print(json.dumps({"rows": meta.get("days"), "through": meta.get("data_through")}, ensure_ascii=False))
+    return 0
+
+
+def cmd_build_site(args: argparse.Namespace) -> int:
+    meta = build_site(args.data_dir, args.out)
+    print(json.dumps({"data_through": meta.get("data_through"), "out": args.out}, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="wp", description="微盘监控数据管线")
     parser.add_argument("--version", action="version", version=C.PIPELINE_VERSION)
@@ -70,6 +90,19 @@ def main(argv: list[str] | None = None) -> int:
     p_pools.add_argument("--rpm", type=float, default=180.0, help="每分钟调用上限")
     p_pools.add_argument("--json", action="store_true")
     p_pools.set_defaults(func=cmd_pools)
+
+    p_slice = sub.add_parser("slice", help="计算一段区间的指标并写 data 目录")
+    p_slice.add_argument("--start", required=True)
+    p_slice.add_argument("--end", required=True)
+    p_slice.add_argument("--fetch-start", default=None, help="取数起点（默认=start）")
+    p_slice.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_slice.add_argument("--no-margin", action="store_true", help="跳过两融（省时间）")
+    p_slice.set_defaults(func=cmd_slice)
+
+    p_site = sub.add_parser("build-site", help="metrics.csv -> 前端 JSON")
+    p_site.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_site.add_argument("--out", default=str(C.PROJECT_ROOT / "web" / "public" / "data"))
+    p_site.set_defaults(func=cmd_build_site)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

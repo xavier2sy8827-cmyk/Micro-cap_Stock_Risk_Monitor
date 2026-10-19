@@ -86,26 +86,36 @@ def equal_weight_index(ret: pd.Series, base: float = 1000.0) -> pd.Series:
     return (1.0 + ret.fillna(0.0)).cumprod() * base
 
 
+def _corr_last(w: np.ndarray, window: int, min_n: int) -> float:
+    keep = ~np.isnan(w).any(axis=0)
+    w = w[:, keep]
+    if w.shape[1] < min_n:
+        return np.nan
+    sd = w.std(axis=0, ddof=0)
+    w = w[:, sd > 0]
+    n = w.shape[1]
+    if n < min_n:
+        return np.nan
+    z = (w - w.mean(axis=0)) / w.std(axis=0, ddof=0)
+    c = z.T @ z / (window - 1)
+    iu = np.triu_indices(n, 1)
+    return float(np.clip(np.nanmean(c[iu]), -1.0, 1.0))
+
+
 def corr60(ret: pd.DataFrame, window: int = 60, min_n: int = 30) -> pd.Series:
     """池内日收益两两 60 日相关系数的算术均值（剔除 NaN / 零方差成员）。"""
     out = pd.Series(np.nan, index=ret.index, dtype=float)
     arr = ret.to_numpy(dtype=float)
     for i in range(window - 1, len(ret)):
-        w = arr[i - window + 1 : i + 1]
-        keep = ~np.isnan(w).any(axis=0)
-        w = w[:, keep]
-        if w.shape[1] < min_n:
-            continue
-        sd = w.std(axis=0, ddof=0)
-        w = w[:, sd > 0]
-        n = w.shape[1]
-        if n < min_n:
-            continue
-        z = (w - w.mean(axis=0)) / w.std(axis=0, ddof=0)
-        c = z.T @ z / (window - 1)
-        iu = np.triu_indices(n, 1)
-        out.iloc[i] = float(np.clip(np.nanmean(c[iu]), -1.0, 1.0))
+        out.iloc[i] = _corr_last(arr[i - window + 1 : i + 1], window, min_n)
     return out
+
+
+def corr60_last(ret_window: pd.DataFrame, min_n: int = 30) -> float:
+    """给一段恰好 window 行的收益矩阵，返回最后一行的 corr60。"""
+    if len(ret_window) < 2:
+        return np.nan
+    return _corr_last(ret_window.to_numpy(dtype=float), len(ret_window), min_n)
 
 
 def ls_vol_ratio(pool_ret: pd.Series, all_ret: pd.Series, window: int = 20) -> pd.Series:

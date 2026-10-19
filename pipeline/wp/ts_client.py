@@ -36,6 +36,16 @@ _PERMISSION_HINTS = ("没有接口", "没有权限", "权限", "积分", "无权
 _PARAM_HINTS = ("参数", "不存在", "invalid", "无效")
 
 
+def _ensure_no_proxy(host: str = "api.waditu.com") -> None:
+    """本机系统代理偶发不可用会让每次调用多等数秒；Tushare 直连即可。"""
+    for key in ("NO_PROXY", "no_proxy"):
+        cur = os.environ.get(key, "")
+        parts = [p.strip() for p in cur.split(",") if p.strip()]
+        if host not in parts:
+            parts.append(host)
+            os.environ[key] = ",".join(parts)
+
+
 def to_compact(value: str | date_cls | datetime) -> str:
     """统一成 YYYYMMDD。"""
     if isinstance(value, (date_cls, datetime)):
@@ -67,6 +77,7 @@ class TsClient:
         self.token = token or os.environ.get("TUSHARE_TOKEN", "")
         if not self.token:
             raise TsError("TUSHARE_TOKEN 未设置")
+        _ensure_no_proxy()
         self.min_interval = C.API_MIN_INTERVAL if min_interval is None else min_interval
         self.max_retries = C.API_MAX_RETRIES if max_retries is None else max_retries
         self.workers = C.API_WORKERS
