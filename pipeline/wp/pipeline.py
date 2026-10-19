@@ -84,6 +84,9 @@ def run_slice(
     meta["pipeline_version"] = C.PIPELINE_VERSION
     meta["calls"] = client.stats()
     meta["duration_sec"] = round(time.time() - t0, 1)
+    if "margin_pool_ratio" in metrics:
+        mt = metrics.loc[metrics["margin_pool_ratio"].notna(), "date"]
+        meta["margin_through"] = str(mt.max())[:10] if len(mt) else None
     with open(target / "meta.json", "w", encoding="utf-8", newline="\n") as fh:
         fh.write(json.dumps(meta, ensure_ascii=False, indent=2) + "\n")
     print(

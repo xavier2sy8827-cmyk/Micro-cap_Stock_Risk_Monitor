@@ -72,12 +72,16 @@ def _merge_metrics(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
     append = new[~new["date"].isin(old_dates)]
     both = pd.concat([hist, append], ignore_index=True)
 
-    margin_cols = [c for c in new.columns if c.startswith("margin_") and c in both.columns]
+    margin_cols = [c for c in new.columns if c.startswith("margin_") and c in both.columns and c != "margin_pool_ratio_z"]
+    changed = False
     if margin_cols:
         m = new.set_index("date")
         mask = both["date"].isin(set(m.index))
         for col in margin_cols:
-            both.loc[mask, col] = both.loc[mask, "date"].map(m[col])
+            nv = both.loc[mask, "date"].map(m[col])
+            if not np.allclose(both.loc[mask, col].astype(float), nv.astype(float), equal_nan=True):
+                changed = True
+            both.loc[mask, col] = nv
 
     both = both.sort_values("date").reset_index(drop=True)
     newmask = ~both["date"].isin(old_dates)
@@ -92,8 +96,14 @@ def _merge_metrics(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
             if i == 0 or pd.isna(idx.iloc[i - 1]):
                 idx.iloc[i] = np.nan
             else:
-                idx.iloc[i] = idx.iloc[i - 1] * (1.0 + both.loc[i, "wp400_ret"])
+                ret = both.loc[i, "wp400_ret"]
+                idx.iloc[i] = idx.iloc[i - 1] * (1.0 + (0.0 if pd.isna(ret) else ret))
         both["wp400_index"] = idx
+    if changed and margin_cols and len(m):
+        start = both.index[both["date"] == m.index.min()]
+        if len(start):
+            calc = _recompute_pct(both.copy())
+            both.loc[start[0]:, "margin_pool_ratio_z"] = calc.loc[start[0]:, "margin_pool_ratio_z"]
     return both
 
 
