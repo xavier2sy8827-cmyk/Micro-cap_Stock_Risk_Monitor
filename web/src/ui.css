@@ -302,6 +302,13 @@
   font-weight: 600;
 }
 
+@media (max-width: 640px) {
+  .nav {
+    margin-left: -12px;
+    margin-right: -12px;
+  }
+}
+
 .foot {
   padding-bottom: 8px;
 }
