@@ -53,7 +53,7 @@ export default function App() {
         <header className="head">
           <h1>微盘风险与监控</h1>
           <span className="meta">
-            {loading ? '数据加载中' : meta ? `数据 ${meta.data_through}` : '数据未就绪'}
+            {loading ? '数据加载中' : meta ? `数据截至 ${meta.data_through}` : '数据未就绪'}
           </span>
           <span className="spacer" />
           <button
@@ -86,7 +86,7 @@ export default function App() {
         </main>
 
         <footer className="foot">
-          <span>数据源 Tushare · 构建 {meta?.generated_at ?? '—'}（北京时间）</span>
+          <span>数据源 Tushare · 数据截至 {meta?.data_through ?? '—'} · 构建 {meta?.generated_at ?? '—'}（北京时间）</span>
           <span>{meta?.days ? `${meta.days} 交易日` : '—'}</span>
         </footer>
 
