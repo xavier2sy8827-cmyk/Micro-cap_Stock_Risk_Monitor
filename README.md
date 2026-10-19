@@ -38,6 +38,12 @@ npm ci
 npm run dev
 ```
 
+数据 JSON 不入库。本地开发二选一：
+
+- 把 `data` 分支 clone 到 `data_store`，在 `pipeline` 目录跑
+  `python -m wp build-site --data-dir ../data_store --out ../web/public/data`
+- 或直接把线上 `data/*.json` 下载到 `web/public/data/`。
+
 ## 部署与数据更新
 
 - 推送到 `main` 触发 `.github/workflows/deploy.yml`：checkout `data` 分支 → `python -m wp build-site` → 构建 `web/` → 发布 Pages。

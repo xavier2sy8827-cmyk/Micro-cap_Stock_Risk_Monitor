@@ -46,8 +46,6 @@ def f5_series(close_qfq: pd.Series, net: pd.Series) -> pd.Series:
     fs[ok] = np.where(np.isfinite(ratio), ratio, np.nan)
     ret = np.full(L, np.nan)
     ret[20:] = c[20:] / c[:-20] - 1.0
-    if L < 41:
-        return pd.Series(dtype=float)
 
     xs = np.lib.stride_tricks.sliding_window_view(fs, 20)[20 : L - 20]
     ys = np.lib.stride_tricks.sliding_window_view(ret, 20)[20 : L - 20]

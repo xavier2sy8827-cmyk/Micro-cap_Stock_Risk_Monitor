@@ -10,12 +10,33 @@ interface ChartCardProps {
   defaultOpen?: boolean
 }
 
+const RANGE_KEY = 'wp-range'
+
+function readRange(): RangeKey {
+  try {
+    const v = localStorage.getItem(RANGE_KEY)
+    if (RANGES.some((r) => r.key === v)) return v as RangeKey
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_RANGE
+}
+
 export function ChartCard({ title, subtitle, summary, asof, children, defaultOpen = false }: ChartCardProps) {
   const forceOpen =
     typeof window !== 'undefined' &&
     `${window.location.search}${window.location.hash}`.includes('open=1')
   const [open, setOpen] = useState(defaultOpen || forceOpen)
-  const [range, setRange] = useState<RangeKey>(DEFAULT_RANGE)
+  const [range, setRange] = useState<RangeKey>(() => readRange())
+
+  const pick = (k: RangeKey) => {
+    setRange(k)
+    try {
+      localStorage.setItem(RANGE_KEY, k)
+    } catch {
+      /* ignore */
+    }
+  }
 
   return (
     <section className={open ? 'cc open' : 'cc'}>
@@ -40,7 +61,7 @@ export function ChartCard({ title, subtitle, summary, asof, children, defaultOpe
                 key={r.key}
                 type="button"
                 className={r.key === range ? 'chip on' : 'chip'}
-                onClick={() => setRange(r.key)}
+                onClick={() => pick(r.key)}
               >
                 {r.key}
               </button>

@@ -105,6 +105,7 @@ export default function MarginPage() {
 
       <div className="hint">
         wp400 观察列：占比 {fmtPct(lastNum(m.wp400_ratio), 3)}、标的 {fmt(lastNum(m.wp400_n), 0)} 只；低覆盖，不进阈值。
+        两融为 T-1 发布，最新交易日可能尚未落库，次日运行会回填该行。
       </div>
     </>
   )
