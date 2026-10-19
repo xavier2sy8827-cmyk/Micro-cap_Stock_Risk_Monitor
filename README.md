@@ -39,11 +39,16 @@ npm run dev
 ## 部署
 
 推送到 `main` 触发 `.github/workflows/deploy.yml`，构建 `web/` 并发布到 GitHub Pages。
-首次使用需在仓库设置中完成：
+首次使用需在仓库设置中完成（缺一不可）：
 
-1. **Settings → Actions → General → Workflow permissions** 设为 `Read and write`
-2. **Settings → Secrets and variables → Actions** 添加 `TUSHARE_TOKEN`
-3. **Settings → Pages → Source** 选 `GitHub Actions`
+1. **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**
+   （未启用时 `configure-pages` 会报 `Create Pages site failed: Resource not accessible by integration`，GITHUB_TOKEN 无权代建）
+2. **Settings → Actions → General → Workflow permissions** 设为 `Read and write`
+   （`daily` 任务需要向 `data` 分支提交）
+3. **Settings → Secrets and variables → Actions** 添加 `TUSHARE_TOKEN`
+
+设置完成后，在 **Actions → deploy → Re-run jobs**，或向 `main` 推一个空提交触发重新部署。
+站点地址：<https://xavier2sy8827-cmyk.github.io/Micro-cap_Stock_Risk_Monitor/>
 
 ## 数据口径（摘要）
 
