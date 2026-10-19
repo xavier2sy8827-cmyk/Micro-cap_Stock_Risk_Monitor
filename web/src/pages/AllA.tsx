@@ -86,9 +86,9 @@ export default function AllAPage() {
       </ChartCard>
 
       <ChartCard
-        title="五层成交额占比"
-        subtitle="沪深300/中证500/中证1000/国证2000/微盘400；分母=全A成交额"
-        summary={`微盘400 ${fmt(lastNum(a.five_layer.share.wp400), 2, '%')}`}
+        title="五层成交额占比分位"
+        subtitle="各层成交额占比的 250 日滚动分位；90/10 为高低线（与 notebook 模块③一致）"
+        summary={`微盘400 分位 ${fmt(lastNum(a.five_layer.share_pct.wp400), 0)} · 占比 ${fmt(lastNum(a.five_layer.share.wp400), 2, '%')}`}
         asof={asof}
       >
         {(r) => {
@@ -98,9 +98,10 @@ export default function AllAPage() {
               dates={a.dates.slice(s)}
               lines={a.five_layer.names.map((n) => ({
                 label: n === 'wp400' ? '微盘400' : n,
-                values: a.five_layer.share[n].slice(s),
+                values: a.five_layer.share_pct[n].slice(s),
                 color: LAYER_COLORS[n],
               }))}
+              thresholds={[90, 10]}
               height={260}
             />
           )

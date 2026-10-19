@@ -153,7 +153,15 @@ export function TimeSeries({ dates, lines, pct, pctExp, thresholds = [], height 
 
   return (
     <>
-      <LinePanel dates={dates} lines={lines} height={hasPct ? Math.max(150, height - 100) : height} showX={!hasPct} />
+      <LinePanel
+        dates={dates}
+        lines={lines}
+        height={hasPct ? Math.max(150, height - 100) : height}
+        showX={!hasPct}
+        thresholds={hasPct ? [] : thresholds}
+        yMin={hasPct ? undefined : 0}
+        yMax={hasPct ? undefined : 100}
+      />
       {hasPct ? (
         <LinePanel
           dates={dates}
