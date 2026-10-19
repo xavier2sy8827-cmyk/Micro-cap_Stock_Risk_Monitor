@@ -150,6 +150,7 @@ export function TimeSeries({ dates, lines, pct, pctExp, thresholds = [], height 
     pctLines.push({ label: '滚动分位', values: pct as Num[], color: '#2b6cb0' })
     if (pctExp) pctLines.push({ label: '全样本分位', values: pctExp, color: '#805ad5', dashed: true })
   }
+  const purePctChart = !hasPct && thresholds.length > 0
 
   return (
     <>
@@ -159,8 +160,8 @@ export function TimeSeries({ dates, lines, pct, pctExp, thresholds = [], height 
         height={hasPct ? Math.max(150, height - 100) : height}
         showX={!hasPct}
         thresholds={hasPct ? [] : thresholds}
-        yMin={hasPct ? undefined : 0}
-        yMax={hasPct ? undefined : 100}
+        yMin={purePctChart ? 0 : undefined}
+        yMax={purePctChart ? 100 : undefined}
       />
       {hasPct ? (
         <LinePanel
