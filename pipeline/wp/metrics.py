@@ -132,7 +132,7 @@ def compute_metrics(sl: Slice) -> tuple[pd.DataFrame, pd.DataFrame]:
     pbs = S.pb_spread(pb[pb_codes], total_mv[pb_codes])
     for col in pbs.columns:
         out[col] = pbs[col]
-    out["pb_spread_pct"], out["pb_spread_pct_exp"] = _pct_pair(out["pb_spread"], 250, 120)
+    out["pb_spread_pct"], out["pb_spread_pct_exp"] = _pct_pair(out["pb_spread"], 750, 250)
 
     corr = pd.Series(np.nan, index=idx, dtype=float)
     for i, d in enumerate(idx):

@@ -8,6 +8,7 @@ import time
 from datetime import date, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from wp import config as C
@@ -25,7 +26,11 @@ def _pct_spec(col: str) -> tuple[str, int, int] | None:
     if not col.endswith("_pct"):
         return None
     base = col[:-4]
-    if base in ("breadth10", "pb_spread", "corr60_wp400", "ls_vol_ratio", "qs_share") or re.match(
+    if base == "pb_spread":
+        return ("roll", 750, 250)
+    if base.startswith("share_") and base[6:] in ("300", "500", "1000", "2000", "wp400"):
+        return ("roll", 250, 250)
+    if base in ("breadth10", "corr60_wp400", "ls_vol_ratio", "qs_share") or re.match(
         r"breadth_L\d+$", base
     ):
         return ("roll", 250, 120)
@@ -60,11 +65,36 @@ def _norm_dates(df: pd.DataFrame, col: str = "date") -> pd.DataFrame:
 
 
 def _merge_metrics(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
-    both = pd.concat([_norm_dates(hist), _norm_dates(new)], ignore_index=True).drop_duplicates(
-        subset=["date"], keep="last"
-    )
+    """历史行保持 INIT 原值，只追加新日期；窗口内只回填两融列（T-1 次日才发布）。"""
+    hist = _norm_dates(hist)
+    new = _norm_dates(new)
+    old_dates = set(hist["date"].astype(str))
+    append = new[~new["date"].isin(old_dates)]
+    both = pd.concat([hist, append], ignore_index=True)
+
+    margin_cols = [c for c in new.columns if c.startswith("margin_") and c in both.columns]
+    if margin_cols:
+        m = new.set_index("date")
+        mask = both["date"].isin(set(m.index))
+        for col in margin_cols:
+            both.loc[mask, col] = both.loc[mask, "date"].map(m[col])
+
     both = both.sort_values("date").reset_index(drop=True)
-    return _recompute_pct(both)
+    newmask = ~both["date"].isin(old_dates)
+    if newmask.any():
+        calc = _recompute_pct(both.copy())
+        for col in [c for c in both.columns if c.endswith(("_pct", "_pct_exp"))] + ["margin_pool_ratio_z"]:
+            if col in calc.columns:
+                both.loc[newmask, col] = calc.loc[newmask, col]
+        both.loc[newmask, "s_width_pct"] = both.loc[newmask, "s_width"] / both.loc[newmask, "n_industries"]
+        idx = both["wp400_index"].copy()
+        for i in both.index[newmask]:
+            if i == 0 or pd.isna(idx.iloc[i - 1]):
+                idx.iloc[i] = np.nan
+            else:
+                idx.iloc[i] = idx.iloc[i - 1] * (1.0 + both.loc[i, "wp400_ret"])
+        both["wp400_index"] = idx
+    return both
 
 
 def _merge_industry(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
@@ -169,8 +199,10 @@ def run_daily(
         day = to_dash(avail)
         all_days = [x for x in all_days if x <= avail]
 
-    fetch_start = all_days[-window]
-    print(f"[daily] {day} window {fetch_start} ~ {day.replace('-', '')}")
+    warmup = 80  # 覆盖 MA20/corr60 等窗口，避免重写窗口时把有效值算成 NaN
+    fetch_start = all_days[-(window + warmup)] if len(all_days) >= window + warmup else all_days[0]
+    merge_start = to_dash(all_days[-window])
+    print(f"[daily] {day} window {merge_start} ~ {day.replace('-', '')} (fetch {fetch_start})")
 
     sl = load_slice(client, start=fetch_start, end=day, fetch_start=fetch_start)
     metrics_new, ind_new = compute_metrics(sl)
@@ -179,16 +211,22 @@ def run_daily(
     new_dates = set(metrics_new["date"].astype(str)) - set(hist["date"].astype(str)) if not hist.empty else set(
         metrics_new["date"].astype(str)
     )
-    if new_dates:
-        metrics = _merge_metrics(hist, metrics_new) if not hist.empty else _recompute_pct(metrics_new)
+    win_mask = metrics_new["date"].astype(str) >= merge_start
+    if not hist.empty:
+        # 只重写最近 window 个交易日，且带 80 日预热；历史行保持全量 INIT 的结果。
+        metrics = _merge_metrics(hist, metrics_new[win_mask])
         ind_hist = read_csv(target / "industry_breadth.csv", dtype={"date": str}) if (target / "industry_breadth.csv").exists() else pd.DataFrame()
         ind_hist = _norm_dates(ind_hist)
-        ind = _merge_industry(ind_hist, ind_new[ind_new["date"].astype(str).isin(new_dates)])
+        ind = _merge_industry(ind_hist, ind_new[ind_new["date"].astype(str) >= merge_start])
         write_csv(metrics, target / "metrics.csv")
         write_csv(ind, target / "industry_breadth.csv")
     else:
-        metrics = hist
-        print("[daily] 无新日期，仅刷新因子窗口")
+        metrics = _recompute_pct(metrics_new)
+        ind = ind_new
+        write_csv(metrics, target / "metrics.csv")
+        write_csv(ind, target / "industry_breadth.csv")
+    if not new_dates:
+        print("[daily] 无新日期，仅刷新窗口/因子")
 
     factor_meta = {}
     if not sl.small_net.empty:

@@ -32,7 +32,7 @@ SAME_DAY = [
     "margin_mkt_rzye", "margin_mkt_rzmre", "margin_pool_n", "margin_pool_rzye",
     "margin_pool_rzmre", "margin_wp400_n", "margin_wp400_rzye",
     "margin_pool_ratio", "margin_pool_buy_ratio", "margin_wp400_ratio",
-    "s_width", "n_industries",
+    "s_width", "n_industries", "ls_vol_ratio",
     "ret_ma5_300", "ret_ma5_500", "ret_ma5_1000", "ret_ma5_2000", "ret_ma5_wp400",
 ]
 for _i in range(1, 11):
@@ -60,8 +60,8 @@ def main() -> int:
         if d not in fmap.index:
             raise SystemExit(f"fresh 缺少 {d}")
         m.loc[m["date"] == d, cols] = fmap.loc[d, cols].to_numpy()
-    # corr60 需要 60 日窗口，fresh 起点不够；用 2 年切片把缺口及后一天补齐。
-    for d in [x for x in m["date"] if GAP_START <= x <= "2026-06-18"]:
+    # corr60 需要 60 日窗口，fresh 起点不够；用 2 年切片覆盖缺口及其后 60 日。
+    for d in [x for x in m["date"] if GAP_START <= x <= "2026-08-14"]:
         if d in ymap.index and "corr60_wp400" in ymap.columns:
             m.loc[m["date"] == d, "corr60_wp400"] = ymap.loc[d, "corr60_wp400"]
 

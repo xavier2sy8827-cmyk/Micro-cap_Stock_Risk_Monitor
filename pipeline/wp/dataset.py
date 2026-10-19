@@ -193,9 +193,10 @@ def load_slice(
     ma20 = qfq_ffill.rolling(20).mean()
     valid_incl = qfq_ffill.notna() & ma20.notna()
     above_incl = (qfq_ffill > ma20) & valid_incl
-    ma20_s = ma20.shift(1)
-    valid_shift = qfq_ffill.notna() & ma20_s.notna()
-    above_shift = (qfq_ffill > ma20_s) & valid_shift
+    ma20_s = qfq.rolling(20).mean().shift(1)
+    # 层内宽度：MA20 不含当日，且停牌/无价成员剔除出分母（与 cell17/18 一致）。
+    valid_shift = qfq.notna() & ma20_s.notna()
+    above_shift = (qfq > ma20_s) & valid_shift
     ret = close / pre - 1.0
 
     codes = [c for c in close.columns if not str(c).endswith(C.EXCLUDE_SUFFIXES)]

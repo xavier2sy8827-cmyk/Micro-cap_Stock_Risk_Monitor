@@ -6,6 +6,17 @@ import numpy as np
 import pandas as pd
 
 from wp.factors import _confirm_r, compute_states
+from wp.daily import _pct_spec
+
+
+def test_pct_windows() -> None:
+    assert _pct_spec("breadth10_pct") == ("roll", 250, 120)
+    assert _pct_spec("breadth_L3_pct") == ("roll", 250, 120)
+    assert _pct_spec("share_wp400_pct") == ("roll", 250, 250)
+    assert _pct_spec("share_300_pct") == ("roll", 250, 250)
+    assert _pct_spec("pb_spread_pct") == ("roll", 750, 250)
+    assert _pct_spec("ratio_top5_pct") == ("roll", 750, 250)
+    assert _pct_spec("share_wp400_pct_exp") == ("exp", 250, 250)
 
 
 def test_states_tail_is_masked() -> None:

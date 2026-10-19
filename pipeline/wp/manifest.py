@@ -105,6 +105,23 @@ def verify(data_dir: str | Path, start: str, end: str) -> dict:
     pool_bad = int((m["n_pool"] != C.POOL_TOTAL_N).sum()) if "n_pool" in m else -1
     if pool_bad > 0:
         issues.append(f"n_pool != 400 的天数 {pool_bad}")
+
+    def max_nan_run(col: str) -> int:
+        s = m[col]
+        first = s.first_valid_index()
+        if first is None:
+            return 0
+        run = best = 0
+        for v in s.loc[first:].isna().tolist():
+            run = run + 1 if v else 0
+            best = max(best, run)
+        return int(best)
+
+    for col in ("corr60_wp400", "ls_vol_ratio"):
+        if col in m:
+            run = max_nan_run(col)
+            if run > 5:
+                issues.append(f"{col} 连续缺失 {run} 日")
     factor_ok = True
     fst_path = src / "factor_states.csv"
     if fst_path.exists():
