@@ -140,6 +140,21 @@ def run_daily(
     )
     if len(all_days) < 80:
         raise SystemExit(f"交易日不足: {len(all_days)}")
+
+    # 收盘后 Tushare 的当日 daily 可能尚未落库；回退到最近有数据的一天，避免写入空行。
+    avail = None
+    for d in reversed(all_days):
+        got = client.daily(d)
+        if got is not None and not got.empty and got["close"].notna().any():
+            avail = d
+            break
+    if avail is None:
+        raise SystemExit("[daily] 窗口内没有任何可用日线")
+    if avail != day.replace("-", ""):
+        print(f"[daily] {day} 日线未落库，回退到 {to_dash(avail)}")
+        day = to_dash(avail)
+        all_days = [x for x in all_days if x <= avail]
+
     fetch_start = all_days[-window]
     print(f"[daily] {day} window {fetch_start} ~ {day.replace('-', '')}")
 
