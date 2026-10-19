@@ -34,7 +34,8 @@ def run_slice(
     meta["pipeline_version"] = C.PIPELINE_VERSION
     meta["calls"] = client.stats()
     meta["duration_sec"] = round(time.time() - t0, 1)
-    (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    with open(target / "meta.json", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(meta, ensure_ascii=False, indent=2) + "\n")
     print(
         f"[slice] done rows={len(metrics)} through={through} "
         f"industry_rows={len(ind)} elapsed={time.time() - t0:.1f}s"

@@ -218,5 +218,6 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "factors.json": {"dates": dates.tolist(), "stub": True},
     }
     for name, obj in payloads.items():
-        (out / name).write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        with open(out / name, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n")
     return meta
