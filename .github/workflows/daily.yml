@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: '0 9 * * *'  # 17:00 Asia/Shanghai
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: write

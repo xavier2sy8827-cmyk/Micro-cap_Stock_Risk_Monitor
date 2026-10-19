@@ -270,7 +270,7 @@ def compute_states(ic: pd.Series, ls: pd.Series) -> tuple[pd.DataFrame, list[dic
     state[(out["R"] == 1).fillna(False)] = 2
     state[(out["F"] == 1).fillna(False)] = 3
     out["state"] = state
-    out["judge_nan"] = judge.isna().any(axis=1).astype(int)
+    out["judge_nan"] = (judge.isna().any(axis=1) | ic.isna()).astype(int)
     return out, events
 
 

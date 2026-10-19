@@ -147,8 +147,7 @@ def run_daily(
     hist = read_csv(target / "metrics.csv", dtype={"date": str}) if (target / "metrics.csv").exists() else pd.DataFrame()
     hist = _norm_dates(hist)
     if not hist.empty and str(hist["date"].max()) >= day:
-        print(f"[daily] {day} 已存在，跳过")
-        return {"status": "noop", "data_through": day}
+        print(f"[daily] {day} 已存在，仅刷新因子窗口")
 
     all_days = client.trade_days(
         (pd.Timestamp(day) - pd.Timedelta(days=400)).strftime("%Y%m%d"), day.replace("-", "")
@@ -180,25 +179,26 @@ def run_daily(
     new_dates = set(metrics_new["date"].astype(str)) - set(hist["date"].astype(str)) if not hist.empty else set(
         metrics_new["date"].astype(str)
     )
-    if not new_dates:
-        print("[daily] 无新日期")
-        return {"status": "noop", "data_through": day}
-    metrics = _merge_metrics(hist, metrics_new) if not hist.empty else _recompute_pct(metrics_new)
-    ind_hist = read_csv(target / "industry_breadth.csv", dtype={"date": str}) if (target / "industry_breadth.csv").exists() else pd.DataFrame()
-    ind_hist = _norm_dates(ind_hist)
-    ind = _merge_industry(ind_hist, ind_new[ind_new["date"].astype(str).isin(new_dates)])
-    write_csv(metrics, target / "metrics.csv")
-    write_csv(ind, target / "industry_breadth.csv")
+    if new_dates:
+        metrics = _merge_metrics(hist, metrics_new) if not hist.empty else _recompute_pct(metrics_new)
+        ind_hist = read_csv(target / "industry_breadth.csv", dtype={"date": str}) if (target / "industry_breadth.csv").exists() else pd.DataFrame()
+        ind_hist = _norm_dates(ind_hist)
+        ind = _merge_industry(ind_hist, ind_new[ind_new["date"].astype(str).isin(new_dates)])
+        write_csv(metrics, target / "metrics.csv")
+        write_csv(ind, target / "industry_breadth.csv")
+    else:
+        metrics = hist
+        print("[daily] 无新日期，仅刷新因子窗口")
 
     factor_meta = {}
     if not sl.small_net.empty:
         fres = compute_factors(sl, pd.to_datetime(metrics_new["date"]))
         if fres.panel_rows:
+            # 窗口内能算出 fwd20 的日期都回填，IC 才会随每日运行向前推进。
             new_ic = factor_ic_long(fres)
-            new_ic = new_ic[new_ic["date"].isin(new_dates)]
             if not new_ic.empty:
                 factor_meta = _merge_factors(target, new_ic, fres.events)
-                print(f"[daily] factors updated {len(new_ic)} rows; ic_through={factor_meta.get('factor_ic_through')}")
+                print(f"[daily] factors refreshed {len(new_ic)} rows; ic_through={factor_meta.get('factor_ic_through')}")
 
     meta_path = target / "meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}

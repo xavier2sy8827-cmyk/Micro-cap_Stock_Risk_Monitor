@@ -78,7 +78,7 @@ def make_manifest(data_dir: str | Path, start: str, end: str) -> dict:
 def verify(data_dir: str | Path, start: str, end: str) -> dict:
     src = Path(data_dir)
     m = read_csv(src / "metrics.csv", dtype={"date": str})
-    days = TsClient().trade_days(to_dash(start), to_dash(end))
+    days = [to_dash(d) for d in TsClient().trade_days(to_dash(start), to_dash(end))]
     dset = set(m["date"].astype(str))
     missing = [d for d in days if d not in dset]
     dup = int(m["date"].duplicated().sum())
