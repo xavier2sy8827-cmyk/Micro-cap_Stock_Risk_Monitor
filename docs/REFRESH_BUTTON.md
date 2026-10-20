@@ -1,7 +1,7 @@
-# 页面「更新数据」按钮 · 方案设计（v0.1）
+# 页面「更新数据」按钮 · 方案设计（v0.3）
 
 > 目标：在 GitHub Pages 静态站点上点一个按钮，即可触发一次 `daily` 工作流，跑完自动刷新页面；不要求用户登录 GitHub，也不把 GitHub token 放进前端。
-> 状态：设计稿，待 GLM-5.3 外审；通过后再实现。
+> 状态：**GLM-5.3 外审 PASS（2026-10-20）**，可进入实现。
 
 ## 1. 背景与问题
 
@@ -35,7 +35,7 @@
 │  浏览器      │ ─────────────────────▶ │ Cloudflare Worker │
 │  (Pages)    │                        │  secret: GH_TOKEN │
 │             │ ◀───────────────────── │  KV: rate limit   │
-└─────────────┘   2. 202 {run_id}      └────────┬─────────┘
+└─────────────┘   2. 202 {dispatched_at} └────────┬─────────┘
       │                                         │ 3. workflow_dispatch
       │                                         ▼
       │                                ┌──────────────────┐
@@ -89,43 +89,74 @@ const endpoint = import.meta.env.VITE_REFRESH_ENDPOINT // 未配置则隐藏按�
 
 async function refreshData() {
   setState('triggering')
-  const before = await getMeta(true) // 仅用于展示；权威版本以 /status 为准
+  // before 必须来自 /status，不能来自 Pages meta（可能被 CDN 缓存成旧值）
+  const before = await getStatus()
 
   const res = await fetch(`${endpoint}/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Refresh-Key': key } : {}) },
     body: JSON.stringify({ ref: 'main' }),
   })
-  // 409 = 已有 run：不要当失败，直接进入 running 轮询
-  if (!res.ok && res.status !== 409) return fail(await parseError(res))
+  const attachedRun = res.status === 409
+  if (!res.ok && !attachedRun) return fail(await parseError(res))
+  const payload = await res.json().catch(() => ({}))
+  const dispatchedAt = payload.dispatched_at ?? new Date().toISOString()
+  const graceUntil = Date.now() + 60_000
+  let sawActive = attachedRun
 
   setState('running')
   const deadline = Date.now() + 20 * 60 * 1000
   while (Date.now() < deadline) {
     await sleep(5000)
-    const st = await fetch(`${endpoint}/status`).then((r) => r.json())
-    if (st.active) continue
-    if (st.run?.conclusion === 'failure' || st.run?.conclusion === 'cancelled') {
+    let st
+    try {
+      st = await getStatus()
+    } catch {
+      continue // 单次网络抖动不终止轮询
+    }
+    // 只认 dispatch 之后创建的 run，避免把上一次 completed run 当成本次结果
+    const isNewRun = !!st.run?.created_at && st.run.created_at >= dispatchedAt
+    if (st.active) {
+      sawActive = true
+      continue
+    }
+    // 409 接手的是更早创建的 run：用 active→inactive 转变判定，不再比对 dispatched_at
+    if (attachedRun && !isNewRun) {
+      if (!sawActive || st.run?.status !== 'completed') continue
+      if (st.last_data_through && st.last_data_through > before.last_data_through) {
+        await reloadUntilCaughtUp(st.last_data_through, before.last_data_through)
+        return success(st.last_data_through)
+      }
+      return unchanged(before.last_data_through)
+    }
+    if (!isNewRun) {
+      if (Date.now() < graceUntil) continue
+      continue // 新 run 还没出现，继续等到超时
+    }
+    if (st.run.conclusion === 'failure' || st.run.conclusion === 'cancelled') {
       return fail(`更新失败：${st.run.html_url}`)
     }
-    if (st.last_data_through && st.last_data_through !== before.data_through) {
-      // 服务端数据已更新；页面 JSON 可能还在 Pages CDN 上，进入同步阶段
-      await reloadUntilCaughtUp(st.last_data_through, before.data_through)
+    if (st.last_data_through && st.last_data_through > before.last_data_through) {
+      await reloadUntilCaughtUp(st.last_data_through, before.last_data_through)
       return success(st.last_data_through)
     }
-    // run 正常结束但数据日期没变：非交易日 / 当天 cron 已跑过 / Tushare 未出数
-    if (st.run?.status === 'completed') return unchanged(before.data_through)
+    // 必须是本次新 run 正常结束且数据未变，才是真的“已是最新”
+    if (st.run.status === 'completed') return unchanged(before.last_data_through)
   }
-  fail('更新超时，请稍后查看 Actions 日志')
+  fail('更新超时，请查看 Actions 日志')
 }
 ```
 
 关键点：
 
-- **成功判据不再是页面 meta**，而是 Worker `/status` 返回的 `last_data_through`（Worker 读 data 分支的 meta，见 5.3）；页面 meta 只用于最终渲染。
-- `reloadUntilCaughtUp`：按 `?v=<data_through>` 重载 JSON；若页面 meta 仍是旧值，每 15 秒重试，最多 10 分钟，期间显示“服务端已更新，CDN 同步中”。
-- 非交易日 / 当天已跑过：run 结束且日期未变 → `unchanged`，不会空等 20 分钟。
-- 409（已有 run）不是错误，直接进入 running 轮询；多标签页可以重复触发，由 Worker 的活跃 run 检查拦下，页面仍能各自轮询。
+- **成功判据**是 Worker `/status` 的 `last_data_through`，不是页面 meta。
+- **只认本次 dispatch 之后的 run**：`/refresh` 返回 `dispatched_at`，`/status` 返回 run 的 `created_at`；旧 completed run 不会被误判。`dispatched_at` 同时写入 KV（`last_dispatch`），`/status` 可回传。
+- 60 秒宽限期只是保险；即使新 run 创建很慢，也不会误显示“已是最新”，只会继续轮询到超时。
+- 单次 `/status` 失败 `continue`，不中断轮询。
+- 非交易日 / 当天已跑过：**本次新 run** 正常结束且日期未变 → `unchanged`。
+- 409（已有 run）不是错误：不比对 `dispatched_at`，改用 `active → inactive` 转变判定；该 run 结束且数据未变 → `unchanged`，数据前进 → 成功。
+- 日期比较用 `>`（`YYYY-MM-DD` 字符串可比较），避免“日期不变仅 generated_at 变”误判。
+- 页面隐藏时暂停轮询，恢复时先拉一次 `/status` 再继续。
 - 20 分钟超时合理（daily 5–25 分钟 + deploy）；超时文案附 Actions 链接。
 
 ### 4.3 GitHub Pages 缓存与权威信号
@@ -204,13 +235,13 @@ X-Refresh-Key: <可选口令>
    - `GET ...?status=queued&per_page=1`
    - 有则返回 409 + `run_url`，不重复触发。
 5. 调 `POST /repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches`，body `{"ref": REF}`。
-6. 返回 202：
+6. 触发成功后把 `dispatched_at` 写入 KV `last_dispatch`（TTL 1 天），返回 202：
 
 ```json
-{"ok":true,"status":"dispatched","ref":"main"}
+{"ok":true,"status":"dispatched","ref":"main","dispatched_at":"2026-10-20T13:05:00Z"}
 ```
 
-> GitHub 的 dispatch 接口不返回 run_id；如需 run_id，触发后短轮询一次 `runs?event=workflow_dispatch&per_page=1` 取最新 run（可选，非必需，页面用 meta 探针即可）。
+> GitHub 的 dispatch 接口不返回 run_id；页面用 `/status` 的 `last_data_through` 与 run `created_at >= dispatched_at` 判定本次结果，不依赖 run_id。
 
 #### `GET /status`
 
@@ -220,9 +251,11 @@ X-Refresh-Key: <可选口令>
 {
   "ok": true,
   "active": false,
+  "dispatched_at": "2026-10-20T13:05:00Z",
   "run": {
     "status": "completed",
     "conclusion": "success",
+    "created_at": "2026-10-20T13:05:20Z",
     "html_url": "https://github.com/.../actions/runs/..."
   },
   "last_data_through": "2026-10-20",
@@ -232,10 +265,11 @@ X-Refresh-Key: <可选口令>
 
 实现：
 
-- 查询 workflow 最近一次 run：`GET /actions/workflows/{workflow}/runs?per_page=1`，取 `status/conclusion/html_url`。
-- 读 `https://raw.githubusercontent.com/{owner}/{repo}/data/meta.json?ts=...`，取 `data_through/generated_at`；请求头加 `Cache-Control: no-cache`，并设置较短的 Worker 内部缓存（例如 30 秒）。
+- 查询 workflow 最近一次 run：`GET /actions/workflows/{workflow}/runs?per_page=1`，取 `status/conclusion/created_at/html_url`。
+- 读 KV `last_dispatch` 作为 `dispatched_at`；没有则 `null`。
+- 读 `https://raw.githubusercontent.com/{owner}/{repo}/data/meta.json`，取 `data_through/generated_at`；使用 `cf: { cacheTtl: 30 }`（不要同时依赖 `Cache-Control` 头）。
 - `active = status in ('queued','in_progress','waiting','requested')`。
-- 页面把 `last_data_through` 作为“服务端是否已更新”的权威信号，而不是依赖 Pages 的 `meta.json`。
+- 页面把 `last_data_through` 作为“服务端是否已更新”的权威信号，并且只接受 `run.created_at >= dispatched_at` 的 run。
 
 #### `OPTIONS /refresh`
 
@@ -282,7 +316,9 @@ export default {
       body: JSON.stringify({ ref: env.REF }),
     })
     if (!res.ok) return cors(json({ error: 'github', status: res.status }, 502), env)
-    return cors(json({ ok: true, status: 'dispatched' }, 202), env)
+    const dispatchedAt = new Date().toISOString()
+    await env.RATE_KV.put('last_dispatch', dispatchedAt, { expirationTtl: 86400 })
+    return cors(json({ ok: true, status: 'dispatched', ref: env.REF, dispatched_at: dispatchedAt }, 202), env)
   },
 }
 
@@ -290,19 +326,22 @@ async function status(env: Env) {
   const run = await latestRun(env)
   const meta = await fetch(
     `https://raw.githubusercontent.com/${env.OWNER}/${env.REPO}/data/meta.json?ts=${Date.now()}`,
-    { headers: { 'Cache-Control': 'no-cache' }, cf: { cacheTtl: 30 } },
+    { cf: { cacheTtl: 30 } },
   ).then((r) => (r.ok ? r.json() : {})).catch(() => ({}))
   return {
     ok: true,
     active: !!run && ['queued', 'in_progress', 'waiting', 'requested'].includes(run.status),
-    run: run ? { status: run.status, conclusion: run.conclusion, html_url: run.html_url } : null,
+    dispatched_at: (await env.RATE_KV.get('last_dispatch')) ?? null,
+    run: run
+      ? { status: run.status, conclusion: run.conclusion, created_at: run.created_at, html_url: run.html_url }
+      : null,
     last_data_through: meta.data_through ?? null,
     last_generated_at: meta.generated_at ?? null,
   }
 }
 ```
 
-> `latestRun` 只查 `per_page=1`；若一次 dispatch 后 GitHub 尚未创建 run，`/status` 会短暂返回 `active:false, run:null`，页面应继续轮询而不是立即判定失败（至少等 30 秒）。
+> `latestRun` 只查 `per_page=1`；dispatch 后 GitHub 异步创建 run，短时间内可能仍返回**上一次 completed run**。页面必须用 `run.created_at >= dispatched_at` 过滤，并在 60 秒宽限期内忽略旧 completed run；宽限期后仍未看到新 run 则继续轮询到超时，不能误判「已是最新」。
 
 ### 5.5 频率限制实现选择
 
@@ -372,6 +411,7 @@ async function status(env: Env) {
 - [ ] 非允许 Origin 的请求被 403。
 - [ ] 配置口令时，错误口令 401，正确口令可触发。
 - [ ] Worker 异常/未配置时，按钮隐藏或降级，页面其他功能不受影响。
+- [ ] dispatch 后 GitHub 尚未创建新 run、`/status` 仍返回上一次 completed run 时，页面不会误显示「已是最新」，会继续等待新 run（`run.created_at >= dispatched_at`）。
 - [ ] 两个标签页同时点击不会产生两个并行 daily（concurrency 组 + 活跃 run 检查），两个页面都能各自看到状态。
 - [ ] cron 正在跑时点击，返回 409 并进入轮询。
 - [ ] PAT 失效（401/403）时 Worker 有日志/告警，页面文案可操作，不是静默失败。
