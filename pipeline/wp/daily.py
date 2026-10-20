@@ -52,6 +52,8 @@ def _recompute_pct(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = S.rolling_pct_last(df[base], win, minp)
     if "margin_pool_ratio" in df.columns:
         df["margin_pool_ratio_z"] = S.zscore_rolling(df["margin_pool_ratio"], 90, 30)
+    if "s_width" in df.columns:
+        df["s_width_pctile"] = S.rolling_pct_last(df["s_width"], 250, 120)
     return df
 
 
@@ -90,6 +92,8 @@ def _merge_metrics(hist: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
         for col in [c for c in both.columns if c.endswith(("_pct", "_pct_exp"))] + ["margin_pool_ratio_z"]:
             if col in calc.columns:
                 both.loc[newmask, col] = calc.loc[newmask, col]
+        if "s_width_pctile" in calc.columns:
+            both.loc[newmask, "s_width_pctile"] = calc.loc[newmask, "s_width_pctile"]
         both.loc[newmask, "s_width_pct"] = both.loc[newmask, "s_width"] / both.loc[newmask, "n_industries"]
         idx = both["wp400_index"].copy()
         for i in both.index[newmask]:

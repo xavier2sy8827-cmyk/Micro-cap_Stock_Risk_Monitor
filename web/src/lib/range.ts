@@ -1,16 +1,18 @@
 import type { Num } from './types'
 
 export const RANGES = [
-  { key: '13W', n: 65 },
+  { key: '4W', n: 20 },
+  { key: '12W', n: 60 },
   { key: '26W', n: 130 },
   { key: '52W', n: 260 },
+  { key: '1Y', n: 252 },
   { key: '2Y', n: 520 },
   { key: '5Y', n: 1300 },
   { key: 'ALL', n: 0 },
 ] as const
 
 export type RangeKey = (typeof RANGES)[number]['key']
-export const DEFAULT_RANGE: RangeKey = '52W'
+export const DEFAULT_RANGE: RangeKey = '4W'
 
 export function rangeCount(range: RangeKey): number {
   return RANGES.find((r) => r.key === range)?.n ?? 0

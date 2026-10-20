@@ -248,6 +248,7 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "industries": {"names": ind_names, "matrix": [_arr(ind_pivot[n]) for n in ind_names]},
         "s_width": _arr(m["s_width"], 3),
         "s_width_pct": _arr(m["s_width_pct"], 3),
+        "s_width_pctile": _arr(m["s_width_pctile"]),
         "n_industries": _arr(m["n_industries"], 0),
         "top5": {"v": _arr(m["ratio_top5"]), "pct": _arr(m["ratio_top5_pct"])},
         "top10": {"v": _arr(m["ratio_top10"]), "pct": _arr(m["ratio_top10_pct"])},

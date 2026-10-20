@@ -215,10 +215,12 @@ def compute_metrics(sl: Slice) -> tuple[pd.DataFrame, pd.DataFrame]:
         n_ind.index = pd.to_datetime(n_ind.index)
         out["n_industries"] = n_ind.reindex(out.index)
         out["s_width_pct"] = out["s_width"] / out["n_industries"]
+        out["s_width_pctile"] = S.rolling_pct_last(out["s_width"], 250, 120)
     else:
         out["s_width"] = np.nan
         out["n_industries"] = np.nan
         out["s_width_pct"] = np.nan
+        out["s_width_pctile"] = np.nan
 
     # ---- 两融 ----
     rows = []

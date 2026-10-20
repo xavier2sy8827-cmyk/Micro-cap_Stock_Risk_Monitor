@@ -46,9 +46,9 @@ export default function AllAPage() {
       </ChartCard>
 
       <ChartCard
-        title="S 宽度"
-        subtitle="各行业扩散率（整数）加总；跨版本看 s_width_pct"
-        summary={`${fmt(lastNum(a.s_width), 0)} · ${fmt(lastNum(a.s_width_pct), 1, '%')}`}
+        title="全A市场宽度分位"
+        subtitle="S 宽度（行业扩散加总）的 250 日滚动分位；90% 拥挤、10% 冰点"
+        summary={`分位 ${fmt(lastNum(a.s_width_pctile), 0)} · S 宽度 ${fmt(lastNum(a.s_width), 0)}`}
         asof={asof}
       >
         {(r) => {
@@ -56,8 +56,9 @@ export default function AllAPage() {
           return (
             <TimeSeries
               dates={a.dates.slice(s)}
-              lines={[{ label: 'S 宽度', values: a.s_width.slice(s), color: '#2b6cb0' }]}
-              height={220}
+              lines={[{ label: 'S 宽度分位', values: a.s_width_pctile.slice(s), color: '#2b6cb0' }]}
+              thresholds={[90, 10]}
+              height={240}
             />
           )
         }}

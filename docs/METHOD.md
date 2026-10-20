@@ -43,6 +43,7 @@
 | `breadth_L1..L10` | 按总市值升序把池切成 10 层（每层 40 只），层内宽度（MA20 用 T-1、不含当日；停牌/无价成员剔除出分母，与 notebook cell17/18 一致） |
 | `s_width` | 行业宽度四舍五入后求和（28/31 个行业随版本切换） |
 | `n_industries` | 当日有有效宽度的行业数；`s_width_pct = s_width/n_industries` |
+| `s_width_pctile` | `s_width` 的 250 日滚动分位（至少 120 个有效值；全A市场宽度图，90/10 线） |
 | `margin_pool_ratio` | circ-1000 池融资余额 / 全市场融资余额 ×100 |
 | `margin_pool_buy_ratio` | circ-1000 池融资买入额 / 全市场融资买入额 ×100 |
 | `margin_wp400_ratio` | 总市值 400 池融资余额 / 全市场融资余额 ×100 |

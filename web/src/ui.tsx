@@ -10,7 +10,7 @@ interface ChartCardProps {
   defaultOpen?: boolean
 }
 
-const RANGE_KEY = 'wp-range'
+const RANGE_KEY = 'wp-range-v2'
 
 function readRange(): RangeKey {
   try {

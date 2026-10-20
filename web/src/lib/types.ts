@@ -50,6 +50,7 @@ export interface AllA {
   industries: { names: string[]; matrix: Num[][] }
   s_width: Num[]
   s_width_pct: Num[]
+  s_width_pctile: Num[]
   n_industries: Num[]
   top5: { v: Num[]; pct: Num[] }
   top10: { v: Num[]; pct: Num[] }
