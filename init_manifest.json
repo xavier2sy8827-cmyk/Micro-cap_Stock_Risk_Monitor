@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-20 08:17:15",
+  "created_at": "2026-10-20 21:02:58",
   "code_commit": "c14cec10ff09ca712caea1184e008d2cefa23ccd",
   "python": "3.12.12",
   "platform": "Windows-11-10.0.26200-SP0",
@@ -9,39 +9,39 @@
     "tushare": "1.4.29"
   },
   "init_start": "2016-01-04",
-  "init_end": "2026-10-19",
-  "data_through": "2026-10-19",
+  "init_end": "2026-10-20",
+  "data_through": "2026-10-20",
   "pipeline_version": "0.1.0",
   "outputs": [
     {
       "path": "metrics.csv",
-      "rows": 2619,
-      "bytes": 2769385,
-      "sha256": "3569dd1658305ee65a4741aad6eceaf606ef219856cb87723d85c4a1cad13f2f"
+      "rows": 2620,
+      "bytes": 2770469,
+      "sha256": "15623e0c285bd400ecbb52e2dc27539c760e15472c3d24db5baf4b0f1fb92af5"
     },
     {
       "path": "industry_breadth.csv",
-      "rows": 77535,
-      "bytes": 2749230,
-      "sha256": "66d3d2b3ce2891c7fb69cf382c07ff7545c083a54a1807fe452d2ec943a33169"
+      "rows": 77566,
+      "bytes": 2750331,
+      "sha256": "b7c3a9b7abfa6f72f82710c716e48569899f0122d787f5fd15079fa051fbdc2e"
     },
     {
       "path": "factor_ic.csv",
-      "rows": 13095,
-      "bytes": 1093131,
-      "sha256": "9c4597e4f0e4e155bdb1aff97d274703addfedd842c7a9e8501889326e2094ba"
+      "rows": 13100,
+      "bytes": 2009500,
+      "sha256": "661b14b35b125e58879189ea53b21c511f975e8ef88f89b24b87e58972fa2d5d"
     },
     {
       "path": "factor_states.csv",
-      "rows": 13095,
-      "bytes": 1793735,
-      "sha256": "51031dbd7d13b3ff5d8be038cf69ee505a13047287af5b31be62dd7e7c00a5ef"
+      "rows": 13100,
+      "bytes": 1850891,
+      "sha256": "a82cb7ac9775e6d62da672502fb0566fe3e32da892bbf3789496028222c35719"
     },
     {
       "path": "factor_events.csv",
-      "rows": 14,
-      "bytes": 1520,
-      "sha256": "be3f28455cd2011f57cec3c0c9934072eaac96cd679197947a73408bd56fdb1f"
+      "rows": 21,
+      "bytes": 2295,
+      "sha256": "758ec9f6f1dc297a4746fb015f5303cbe88b4ecc0eb59413a11776dabdc5e683"
     }
   ],
   "tushare_schema_snapshot": {
@@ -123,35 +123,35 @@
   },
   "calls": {
     "calls": {
-      "trade_cal": 1,
-      "daily": 2700,
-      "daily_basic": 2700,
-      "stock_st": 2700,
-      "margin_detail": 2700,
-      "moneyflow": 2700,
+      "trade_cal": 3,
+      "daily": 180,
+      "daily_basic": 180,
+      "stock_st": 180,
+      "margin_detail": 180,
+      "moneyflow": 180,
       "index_daily": 4,
       "stock_basic": 3,
-      "namechange": 13,
+      "namechange": 2,
       "index_classify": 2,
       "index_member": 59
     },
     "attempts": {
-      "trade_cal": 1,
-      "daily": 2700,
-      "daily_basic": 2700,
-      "stock_st": 2700,
-      "margin_detail": 2700,
-      "moneyflow": 2700,
+      "trade_cal": 3,
+      "daily": 180,
+      "daily_basic": 180,
+      "stock_st": 180,
+      "margin_detail": 180,
+      "moneyflow": 180,
       "index_daily": 4,
       "stock_basic": 3,
-      "namechange": 13,
+      "namechange": 2,
       "index_classify": 2,
       "index_member": 59
     },
-    "total": 13582
+    "total": 973
   },
-  "duration_sec": 5684.7,
+  "duration_sec": 487.5,
   "warnings": [],
   "degraded": [],
-  "factor_ic_through": "2026-09-11"
+  "factor_ic_through": "2026-09-14"
 }
