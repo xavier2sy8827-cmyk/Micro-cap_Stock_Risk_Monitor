@@ -1,0 +1,15 @@
+name = "wp-refresh"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+OWNER = "xavier2sy8827-cmyk"
+REPO = "Micro-cap_Stock_Risk_Monitor"
+WORKFLOW = "daily.yml"
+REF = "main"
+ALLOWED_ORIGIN = "https://xavier2sy8827-cmyk.github.io"
+
+[[kv_namespaces]]
+binding = "RATE_KV"
+id = "83421fdebb87468d9693621f108b1026"

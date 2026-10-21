@@ -119,6 +119,12 @@ body {
   background: var(--muted);
 }
 
+.linkbtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  background: none;
+}
+
 .banner {
   margin-top: 10px;
   padding: 8px 10px;

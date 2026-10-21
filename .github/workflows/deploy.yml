@@ -55,6 +55,7 @@ jobs:
         working-directory: web
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_REFRESH_ENDPOINT: ${{ vars.REFRESH_ENDPOINT }}
         run: npm run build
 
       - uses: actions/configure-pages@v5

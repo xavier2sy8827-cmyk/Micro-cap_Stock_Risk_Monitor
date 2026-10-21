@@ -11,6 +11,7 @@ import LayersPage from './pages/Layers'
 import MarginPage from './pages/Margin'
 import MorePage from './pages/More'
 import Overview from './pages/Overview'
+import { RefreshButton } from './RefreshButton'
 
 type Theme = 'light' | 'dark'
 
@@ -56,6 +57,7 @@ export default function App() {
             {loading ? '数据加载中' : meta ? `数据截至 ${meta.data_through}` : '数据未就绪'}
           </span>
           <span className="spacer" />
+          <RefreshButton />
           <button
             className="linkbtn"
             type="button"
