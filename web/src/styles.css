@@ -313,6 +313,17 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
+  .head {
+    gap: 6px;
+    row-gap: 2px;
+  }
+
+  .head .linkbtn {
+    font-size: 11px;
+    padding: 5px 6px;
+    min-height: 28px;
+  }
+
   .kpi .cell:nth-child(3) {
     border-left: 0;
   }
