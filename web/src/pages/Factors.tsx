@@ -14,6 +14,10 @@ export default function FactorsPage() {
   if (error || !data) return <ErrorBox message={error ?? 'factors.json 缺失'} />
   const f = data
   const total = f.dates.length
+  // 因子图右端固定在 IC 最后有效日：尾部 20 日没有 fwd20，若直接显示，
+  // 4W 默认范围会整段为空白（不是数据缺失）。
+  const endIdx = f.updated_through ? f.dates.indexOf(f.updated_through) : -1
+  const chartEnd = endIdx >= 0 ? endIdx + 1 : total
   const hasFactors = Object.keys(f.states).length > 0
   const asof = f.updated_through ?? meta?.data_through ?? f.dates[total - 1]
   const labels = f.factors.map((k) => `${k.split('_')[0]} ${f.names[k] ?? k}`)
@@ -34,7 +38,7 @@ export default function FactorsPage() {
     <>
       <PageTitle
         title="核心因子监控"
-        desc={`IC 截至 ${asof}（前瞻 20 日，尾部 ${f.tail_gap} 日不可判）· 数据 ${meta?.data_through ?? '—'}`}
+        desc={`IC 截至 ${asof}（前瞻 20 日，尾部 ${f.tail_gap} 日不可判）· 图截至 IC 有效日 · 数据 ${meta?.data_through ?? '—'}`}
       />
 
       <ChartCard
@@ -44,16 +48,16 @@ export default function FactorsPage() {
         asof={asof}
       >
         {(r) => {
-          const s = rangeStart(total, r)
+          const s = rangeStart(chartEnd, r)
           return (
             <Heatmap
               names={labels}
               matrix={f.factors.map((k) =>
                 f.states[k].state
                   .map((v, i) => (f.states[k].judge_nan[i] ? null : v))
-                  .slice(s),
+                  .slice(s, chartEnd),
               )}
-              dates={f.dates.slice(s)}
+              dates={f.dates.slice(s, chartEnd)}
               height={220}
               max={3}
               colors={['#3ba272', '#c47f17', '#d5495c', '#805ad5']}
@@ -72,18 +76,18 @@ export default function FactorsPage() {
 
       <ChartCard
         title={`${selected.split('_')[0]} ${f.names[selected] ?? ''} · Rank IC`}
-        subtitle="日频 Rank IC（浅）与 252 日均值（深）；IC 末日 = 数据末日 − 20"
+        subtitle="日频 Rank IC（浅）与 252 日均值（深）；图截至 IC 末日，尾部 20 日不可判不绘入"
         summary={`IC ${fmt(lastNum(f.ic[selected]), 3)}`}
         asof={asof}
       >
         {(r) => {
-          const s = rangeStart(total, r)
+          const s = rangeStart(chartEnd, r)
           return (
             <TimeSeries
-              dates={f.dates.slice(s)}
+              dates={f.dates.slice(s, chartEnd)}
               lines={[
-                { label: 'Rank IC', values: f.ic[selected].slice(s), color: '#9ec5f0' },
-                { label: 'IC 252 均值', values: f.ic_mean_252[selected].slice(s), color: '#2b6cb0' },
+                { label: 'Rank IC', values: f.ic[selected].slice(s, chartEnd), color: '#9ec5f0' },
+                { label: 'IC 252 均值', values: f.ic_mean_252[selected].slice(s, chartEnd), color: '#2b6cb0' },
               ]}
               height={230}
             />
@@ -94,15 +98,15 @@ export default function FactorsPage() {
       <ChartCard
         title={`${selected.split('_')[0]} · 多空净值`}
         subtitle="五分位等权日调（Q5−Q1），加法净值；非可交易口径"
-        summary={`NAV ${fmt(lastNum(f.ls_nav[selected]), 2)}`}
-        asof={meta?.data_through}
+        summary={`NAV ${fmt(lastNum(f.ls_nav[selected].slice(0, chartEnd)), 2)}`}
+        asof={asof}
       >
         {(r) => {
-          const s = rangeStart(total, r)
+          const s = rangeStart(chartEnd, r)
           return (
             <TimeSeries
-              dates={f.dates.slice(s)}
-              lines={[{ label: '多空 NAV', values: f.ls_nav[selected].slice(s), color: '#d5495c' }]}
+              dates={f.dates.slice(s, chartEnd)}
+              lines={[{ label: '多空 NAV', values: f.ls_nav[selected].slice(s, chartEnd), color: '#d5495c' }]}
               height={230}
             />
           )
@@ -112,15 +116,15 @@ export default function FactorsPage() {
       <ChartCard
         title="ICIR 与状态判据"
         subtitle="ICIR(252) 与判据灯（L/D/R/F）；NaN = 不可判"
-        summary={`L ${fmt(lastNum(f.states[selected].L), 0)} · D ${fmt(lastNum(f.states[selected].D), 0)} · R ${fmt(lastNum(f.states[selected].R), 0)} · F ${fmt(lastNum(f.states[selected].F), 0)}`}
+        summary={`L ${fmt(lastNum(f.states[selected].L.slice(0, chartEnd)), 0)} · D ${fmt(lastNum(f.states[selected].D.slice(0, chartEnd)), 0)} · R ${fmt(lastNum(f.states[selected].R.slice(0, chartEnd)), 0)} · F ${fmt(lastNum(f.states[selected].F.slice(0, chartEnd)), 0)}`}
         asof={asof}
       >
         {(r) => {
-          const s = rangeStart(total, r)
+          const s = rangeStart(chartEnd, r)
           return (
             <TimeSeries
-              dates={f.dates.slice(s)}
-              lines={[{ label: 'ICIR', values: f.icir_252[selected].slice(s), color: '#805ad5' }]}
+              dates={f.dates.slice(s, chartEnd)}
+              lines={[{ label: 'ICIR', values: f.icir_252[selected].slice(s, chartEnd), color: '#805ad5' }]}
               height={200}
             />
           )
