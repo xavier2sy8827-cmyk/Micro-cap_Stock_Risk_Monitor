@@ -57,15 +57,17 @@ export default function App() {
             {loading ? '数据加载中' : meta ? `数据截至 ${meta.data_through}` : '数据未就绪'}
           </span>
           <span className="spacer" />
-          <RefreshButton />
-          <button
-            className="linkbtn"
-            type="button"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title="切换浅色 / 深色"
-          >
-            主题
-          </button>
+          <span className="head-actions">
+            <RefreshButton />
+            <button
+              className="linkbtn"
+              type="button"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              title="切换浅色 / 深色"
+            >
+              主题
+            </button>
+          </span>
         </header>
 
         {error ? <div className="banner">元数据加载失败：{error}</div> : null}

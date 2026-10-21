@@ -103,6 +103,13 @@ body {
   flex: 1;
 }
 
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
 .linkbtn {
   font: inherit;
   font-size: 12px;

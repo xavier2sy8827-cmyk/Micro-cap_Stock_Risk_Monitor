@@ -58,7 +58,14 @@ export function RefreshButton() {
     }
 
     const key = readRefreshKey()
-    let res = await triggerRefresh(key)
+    let res: Awaited<ReturnType<typeof triggerRefresh>>
+    try {
+      res = await triggerRefresh(key)
+    } catch {
+      finish('无法连接更新服务')
+      setDetail('网络无法访问 Worker，请检查网络/代理')
+      return
+    }
     if (res.status === 401 && res.body.error === 'key') {
       const input = window.prompt('请输入刷新口令')
       if (!input) {
@@ -66,7 +73,12 @@ export function RefreshButton() {
         return
       }
       saveRefreshKey(input)
-      res = await triggerRefresh(input)
+      try {
+        res = await triggerRefresh(input)
+      } catch {
+        finish('无法连接更新服务')
+        return
+      }
     }
 
     const attachedRun = res.status === 409
@@ -81,6 +93,7 @@ export function RefreshButton() {
     const beforeDate = before?.last_data_through ?? ''
     const graceUntil = Date.now() + 60_000
     let sawActive = attachedRun
+    let statusFails = 0
     const deadline = Date.now() + 20 * 60 * 1000
 
     setText('更新中…')
@@ -90,7 +103,14 @@ export function RefreshButton() {
       let st: RefreshStatus
       try {
         st = await getRefreshStatus()
+        statusFails = 0
       } catch {
+        statusFails += 1
+        if (statusFails >= 3) {
+          finish('无法连接更新服务')
+          setDetail('网络无法访问 Worker，请检查网络/代理')
+          return
+        }
         continue
       }
 
