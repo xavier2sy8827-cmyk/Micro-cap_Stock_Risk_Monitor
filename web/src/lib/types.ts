@@ -65,7 +65,16 @@ export interface AllA {
 
 export interface Layers {
   dates: string[]
-  layers: { key: string; breadth: Num[]; pct: Num[]; ret_ma5: Num[]; n_valid: Num[] }[]
+  layers: {
+    key: string
+    breadth: Num[]
+    pct: Num[]
+    ret_1d: Num[]
+    ret_ma5: Num[]
+    ret_ma10: Num[]
+    ret_ma20: Num[]
+    n_valid: Num[]
+  }[]
 }
 
 export interface Margin {

@@ -80,7 +80,10 @@ export default function LayersPage() {
               <th>层</th>
               <th>最新宽度</th>
               <th>分位</th>
+              <th>当日收益</th>
               <th>收益 MA5</th>
+              <th>收益 MA10</th>
+              <th>收益 MA20</th>
               <th>有效成员</th>
             </tr>
           </thead>
@@ -90,7 +93,10 @@ export default function LayersPage() {
                 <td>{x.key}</td>
                 <td>{fmt(lastNum(x.breadth), 1, '%')}</td>
                 <td>{fmtPct(lastNum(x.pct))}</td>
+                <td>{fmt(lastNum(x.ret_1d), 2, '%')}</td>
                 <td>{fmt(lastNum(x.ret_ma5), 2, '%')}</td>
+                <td>{fmt(lastNum(x.ret_ma10), 2, '%')}</td>
+                <td>{fmt(lastNum(x.ret_ma20), 2, '%')}</td>
                 <td>{fmt(lastNum(x.n_valid), 0)}</td>
               </tr>
             ))}

@@ -268,7 +268,10 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
                 "key": f"L{i}",
                 "breadth": _arr(m[f"breadth_L{i}"]),
                 "pct": _arr(m[f"breadth_L{i}_pct"]),
+                "ret_1d": _arr(m[f"ret_1d_L{i}"]),
                 "ret_ma5": _arr(m[f"ret_ma5_L{i}"]),
+                "ret_ma10": _arr(m[f"ret_ma10_L{i}"]),
+                "ret_ma20": _arr(m[f"ret_ma20_L{i}"]),
                 "n_valid": _arr(m[f"n_valid_L{i}"], 0),
             }
             for i in range(1, 11)

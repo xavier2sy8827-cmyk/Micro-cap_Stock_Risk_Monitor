@@ -187,7 +187,10 @@ def compute_metrics(sl: Slice) -> tuple[pd.DataFrame, pd.DataFrame]:
         out[f"breadth_L{L}_pct"] = S.rolling_pct_last(br, 250, 120)
         out[f"n_valid_L{L}"] = nv
         r = ret.where(mask).mean(axis=1)
+        out[f"ret_1d_L{L}"] = r * 100.0
         out[f"ret_ma5_L{L}"] = r.rolling(5).mean() * 100.0
+        out[f"ret_ma10_L{L}"] = r.rolling(10).mean() * 100.0
+        out[f"ret_ma20_L{L}"] = r.rolling(20).mean() * 100.0
 
     # ---- 行业宽度 ----
     ind = sl.industry.reindex(index=idx, columns=codes)
