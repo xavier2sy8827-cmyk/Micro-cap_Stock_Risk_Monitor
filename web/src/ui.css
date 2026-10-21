@@ -307,6 +307,15 @@
     margin-left: -12px;
     margin-right: -12px;
   }
+
+  .table {
+    font-size: 10px;
+  }
+
+  .table th,
+  .table td {
+    padding: 3px 3px;
+  }
 }
 
 .foot {
