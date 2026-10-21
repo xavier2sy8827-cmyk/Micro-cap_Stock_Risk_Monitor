@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-21 13:14:28",
+  "generated_at": "2026-10-21 13:22:40",
   "source": "tushare",
   "slice_start": "2016-01-04",
   "slice_end": "2026-10-20",
@@ -12,33 +12,33 @@
   "pipeline_version": "0.1.0",
   "calls": {
     "calls": {
-      "trade_cal": 1,
-      "daily": 2701,
-      "daily_basic": 2701,
-      "stock_st": 2701,
-      "margin_detail": 2701,
-      "moneyflow": 2701,
+      "trade_cal": 3,
+      "daily": 181,
+      "daily_basic": 180,
+      "stock_st": 180,
+      "margin_detail": 180,
+      "moneyflow": 180,
       "index_daily": 4,
       "stock_basic": 3,
-      "namechange": 13,
+      "namechange": 2,
       "index_classify": 2,
       "index_member": 59
     },
     "attempts": {
-      "trade_cal": 1,
-      "daily": 2701,
-      "daily_basic": 2701,
-      "stock_st": 2701,
-      "margin_detail": 2701,
-      "moneyflow": 2701,
+      "trade_cal": 3,
+      "daily": 181,
+      "daily_basic": 180,
+      "stock_st": 180,
+      "margin_detail": 180,
+      "moneyflow": 180,
       "index_daily": 4,
       "stock_basic": 3,
-      "namechange": 13,
+      "namechange": 2,
       "index_classify": 2,
       "index_member": 59
     },
-    "total": 13587
+    "total": 974
   },
-  "duration_sec": 5635.2,
+  "duration_sec": 412.3,
   "margin_through": "2026-10-20"
 }
