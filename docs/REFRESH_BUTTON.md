@@ -344,8 +344,22 @@ async function status(env: Env) {
 
 > `latestRun` 只查 `per_page=1`；dispatch 后 GitHub 异步创建 run，短时间内可能仍返回**上一次 completed run**。页面必须用 `run.created_at >= dispatched_at` 过滤，并在 60 秒宽限期内忽略旧 completed run；宽限期后仍未看到新 run 则继续轮询到超时，不能误判「已是最新」。
 
-### 5.5 频率限制实现选择
+### 5.4.1 Cloudflare Cron（17:00 主定时）
 
+`wrangler.toml` 配置：
+
+```toml
+[triggers]
+crons = ["0 9 * * *", "10 9 * * *"]
+```
+
+- `0 9 * * *` UTC = 17:00 北京时间；`10 9 * * *` = 17:10 重试。
+- `scheduled` handler：周末跳过；若已有 active run 或 `last_data_through` 已是当天，跳过；否则调用同一个 `dispatch`。
+- Cron 不走页面 CORS/口令；仍写入 KV `last_refresh`，避免和页面按钮在 10 分钟内重复触发。
+- GitHub 的 `daily.yml schedule` 保留作兜底；重复时靠 workflow 的 `concurrency: wp-data` 串行化。
+- 11:30/12:00 不配置：Tushare `daily` 当日日线在收盘后才落库，12:00 跑只会回退到上一交易日。
+
+### 5.5 频率限制实现选择
 | 方案 | 优点 | 缺点 |
 |---|---|---|
 | KV + 时间戳 | 简单、免费 | 最终一致，极端并发可能穿透 |

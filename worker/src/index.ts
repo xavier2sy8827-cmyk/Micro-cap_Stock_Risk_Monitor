@@ -1,5 +1,5 @@
-// 页面「更新数据」按钮的 Cloudflare Worker。
-// 只做三件事：CORS/口令/限流校验、触发 GitHub Actions、返回 run 与 data 分支版本。
+// 页面「更新数据」按钮 + Cloudflare Cron 的 Worker。
+// 职责：CORS/口令/限流校验、触发 GitHub Actions、返回 run 与 data 分支版本。
 
 interface Env {
   GITHUB_TOKEN: string
@@ -101,6 +101,52 @@ async function status(env: Env): Promise<Record<string, unknown>> {
   }
 }
 
+/** 真正触发 daily；页面按钮和 Cron 共用。 */
+async function dispatch(env: Env): Promise<Response> {
+  const run = await latestRun(env)
+  if (run && ACTIVE.has(String(run.status))) {
+    return json({ error: 'running', run_url: run.html_url }, 409)
+  }
+
+  const now = Date.now()
+  // 占位，避免手动与 Cron 在几秒内重复触发；失败再删除。
+  await env.RATE_KV.put('last_refresh', String(now), TTL)
+  const res = await gh(
+    env,
+    `/repos/${env.OWNER}/${env.REPO}/actions/workflows/${env.WORKFLOW}/dispatches`,
+    { method: 'POST', body: JSON.stringify({ ref: env.REF }) },
+  )
+  if (!res.ok) {
+    await env.RATE_KV.delete('last_refresh')
+    return json({ error: 'github', status: res.status }, 502)
+  }
+
+  const dispatchedAt = new Date().toISOString()
+  await env.RATE_KV.put('last_dispatch', dispatchedAt, TTL)
+  return json({ ok: true, status: 'dispatched', ref: env.REF, dispatched_at: dispatchedAt }, 202)
+}
+
+function beijingNow(): Date {
+  return new Date(Date.now() + 8 * 3600 * 1000)
+}
+
+/** 17:00 / 17:10 北京时间的 Cron。Cron 不做 Origin/口令校验，只做交易日与幂等判断。 */
+async function scheduledRun(env: Env): Promise<void> {
+  const bj = beijingNow()
+  const weekday = bj.getUTCDay()
+  if (weekday === 0 || weekday === 6) return
+
+  const today = bj.toISOString().slice(0, 10)
+  const st = await status(env)
+  if (st.active) return
+  if (st.last_data_through === today) return
+
+  const res = await dispatch(env)
+  if (res.status >= 300) {
+    console.log('scheduled dispatch skipped', res.status, await res.text())
+  }
+}
+
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url)
@@ -124,32 +170,17 @@ export default {
       return cors(json({ error: 'key' }, 401), env)
     }
 
-    const now = Date.now()
     const last = await env.RATE_KV.get('last_refresh')
-    if (last && now - Number(last) < RATE_MS) {
-      const retry = Math.ceil((RATE_MS - (now - Number(last))) / 1000)
+    if (last && Date.now() - Number(last) < RATE_MS) {
+      const retry = Math.ceil((RATE_MS - (Date.now() - Number(last))) / 1000)
       return cors(json({ error: 'rate', retry_after: retry }, 429), env)
     }
 
-    const run = await latestRun(env)
-    if (run && ACTIVE.has(String(run.status))) {
-      return cors(json({ error: 'running', run_url: run.html_url }, 409), env)
-    }
+    return cors(await dispatch(env), env)
+  },
 
-    // 先占位，避免并发请求同时 dispatch；失败再删除。
-    await env.RATE_KV.put('last_refresh', String(now), TTL)
-    const res = await gh(
-      env,
-      `/repos/${env.OWNER}/${env.REPO}/actions/workflows/${env.WORKFLOW}/dispatches`,
-      { method: 'POST', body: JSON.stringify({ ref: env.REF }) },
-    )
-    if (!res.ok) {
-      await env.RATE_KV.delete('last_refresh')
-      return cors(json({ error: 'github', status: res.status }, 502), env)
-    }
-
-    const dispatchedAt = new Date().toISOString()
-    await env.RATE_KV.put('last_dispatch', dispatchedAt, TTL)
-    return cors(json({ ok: true, status: 'dispatched', ref: env.REF, dispatched_at: dispatchedAt }, 202), env)
+  // Cloudflare Cron Trigger: 09:00 UTC = 17:00 北京时间；09:10 UTC = 17:10 重试。
+  async scheduled(_event: any, env: Env, ctx: any): Promise<void> {
+    ctx.waitUntil(scheduledRun(env))
   },
 }

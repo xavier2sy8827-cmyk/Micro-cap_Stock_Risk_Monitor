@@ -13,3 +13,6 @@ ALLOWED_ORIGIN = "https://xavier2sy8827-cmyk.github.io"
 [[kv_namespaces]]
 binding = "RATE_KV"
 id = "83421fdebb87468d9693621f108b1026"
+
+[triggers]
+crons = ["0 9 * * *", "10 9 * * *"]

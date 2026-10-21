@@ -33,6 +33,22 @@ wrangler secret put REFRESH_KEY
 
 配置后页面首次点击会提示输入口令，存在浏览器 localStorage。
 
+## 定时（Cloudflare Cron）
+
+`wrangler.toml` 已配置：
+
+```toml
+[triggers]
+crons = ["0 9 * * *", "10 9 * * *"]
+```
+
+- `09:00 UTC` = **17:00 北京时间**，触发 daily
+- `09:10 UTC` = **17:10 北京时间**，如果 17:00 的 run 已失败/没有产生当天数据，再重试
+- 如果 run 还在跑、或 `data_through` 已经是当天，自动跳过
+- 周末自动跳过；法定节假日会触发但 daily 没有新数据，属于 no-op
+
+GitHub 自带 `daily.yml` 的 `schedule` 仍保留，作为 Worker 不可用时的兜底；两者重复触发时由 workflow 的 `concurrency: wp-data` 串行化。
+
 ## 验证
 
 ```powershell
