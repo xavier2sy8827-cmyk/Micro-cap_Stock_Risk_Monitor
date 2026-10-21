@@ -4,8 +4,8 @@
 
 - 目标站点：<https://xavier2sy8827-cmyk.github.io/Micro-cap_Stock_Risk_Monitor/>
 - 数据源：Tushare Pro（仅需 `TUSHARE_TOKEN`）
-- 运行方式：本地一次性 INIT；GitHub Actions 每交易日 17:00（北京时间）增量更新
-- 站点形态：纯静态（React + Vite + ECharts），手机优先，无后端
+- 运行方式：本地一次性 INIT；Cloudflare Worker Cron 每交易日 17:00（北京时间）触发 GitHub Actions 增量更新；GitHub schedule 作兜底
+- 站点形态：React + Vite + ECharts 静态站，手机优先；页面「更新数据」按钮通过 Cloudflare Worker 触发 daily（不暴露 GitHub token）
 
 ## 当前状态
 
@@ -13,18 +13,19 @@
 |---|---|---|
 | M0 | 仓库骨架 + 最小站点 + Pages 部署链路 | 完成（Pages 已上线） |
 | M1 | 数据骨架：Tushare 客户端、两个池、格式基线、CI | 完成（18 项单测通过、CI 绿） |
-| M2 | 非因子指标 + 7 个监控页面 | 完成（近端 2 年切片；全量等 M4） |
+| M2 | 非因子指标 + 7 个监控页面 | 完成（全量） |
 | M3 | 核心因子监控（IC / 多空 / 四态） | 完成（全量） |
-| M4 | 全量 INIT（2016 起）+ data 分支 | 完成（2016-01-04 ~ 2026-10-19，2619 个交易日） |
-| M5 | 每日 cron、接缝测试、手机验收 | daily 已跑通（push 触发）；cron 已排程 17:00，首个自动触发待观察 |
+| M4 | 全量 INIT（2016 起）+ data 分支 | 完成（2016-01-04 ~ 2026-10-20，2620 个交易日） |
+| M5 | 每日 cron、接缝测试、手机验收 | 完成（Worker Cron 17:00/17:10 + GitHub schedule 兜底；页面按钮可用） |
 
 ## 目录
 
 ```
 web/                     React + Vite + TypeScript 站点
-pipeline/wp/             Python 数据管线（M1 起填充）
+pipeline/wp/             Python 数据管线
+worker/                  Cloudflare Worker（页面按钮 + 17:00/17:10 Cron）
 scripts/                 对拍与运维脚本
-docs/                    口径、对拍、二期说明
+docs/                    口径、对拍、UI、更新按钮设计
 .github/workflows/       deploy / ci / daily / backfill
 ```
 
@@ -47,7 +48,9 @@ npm run dev
 ## 部署与数据更新
 
 - 推送到 `main` 触发 `.github/workflows/deploy.yml`：checkout `data` 分支 → `python -m wp build-site` → 构建 `web/` → 发布 Pages。
-- 每个交易日 17:00（北京时间）`.github/workflows/daily.yml` 增量更新最近窗口，提交到 `data` 分支后调用 deploy 发布。
+- **17:00 主定时**：Cloudflare Worker Cron（`09:00 UTC`）触发 `daily.yml`；`09:10 UTC` 重试。Cron 不依赖本地电脑开机。
+- **17:00 兜底**：`.github/workflows/daily.yml` 的 `schedule` 仍保留；与 Worker 重复时由 `concurrency: wp-data` 串行化。
+- **页面按钮**：右上角「更新数据」→ Cloudflare Worker `/refresh` → 同一个 `daily.yml`；token 只在 Worker secret。
 - 需要重建全量历史时手动跑 `.github/workflows/backfill.yml`（输出起点 2016-01-04，预热起点 2015-09-01）。
 
 首次使用需在仓库设置中完成（缺一不可）：
@@ -57,6 +60,11 @@ npm run dev
 2. **Settings → Actions → General → Workflow permissions** 设为 `Read and write`
    （`daily` 任务需要向 `data` 分支提交）
 3. **Settings → Secrets and variables → Actions** 添加 `TUSHARE_TOKEN`
+4. **页面按钮 / 17:00 Worker Cron（可选）**：
+   - `cd worker && wrangler deploy`
+   - `wrangler secret put GITHUB_TOKEN`（fine-grained PAT，仅该仓库 Actions: Read and write）
+   - 详见 [`worker/README.md`](worker/README.md) 与 [`docs/REFRESH_BUTTON.md`](docs/REFRESH_BUTTON.md)
+   - 如需自定义端点，在 **Actions → Variables** 设置 `REFRESH_ENDPOINT`（默认已内置当前 Worker URL）
 
 设置完成后，在 **Actions → deploy → Re-run jobs**，或向 `main` 推一个空提交触发重新部署。
 站点地址：<https://xavier2sy8827-cmyk.github.io/Micro-cap_Stock_Risk_Monitor/>
