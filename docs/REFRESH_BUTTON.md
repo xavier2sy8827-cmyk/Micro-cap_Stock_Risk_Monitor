@@ -115,7 +115,8 @@ async function refreshData() {
       continue // 单次网络抖动不终止轮询
     }
     // 只认 dispatch 之后创建的 run，避免把上一次 completed run 当成本次结果
-    const isNewRun = !!st.run?.created_at && st.run.created_at >= dispatchedAt
+    const isNewRun =
+      !!st.run?.created_at && Date.parse(st.run.created_at) >= Date.parse(dispatchedAt) - 120_000
     if (st.active) {
       sawActive = true
       continue
@@ -150,7 +151,7 @@ async function refreshData() {
 关键点：
 
 - **成功判据**是 Worker `/status` 的 `last_data_through`，不是页面 meta。
-- **只认本次 dispatch 之后的 run**：`/refresh` 返回 `dispatched_at`，`/status` 返回 run 的 `created_at`；旧 completed run 不会被误判。`dispatched_at` 同时写入 KV（`last_dispatch`），`/status` 可回传。
+- **只认本次 dispatch 之后的 run**：`/refresh` 返回 `dispatched_at`，`/status` 返回 run 的 `created_at`；旧 completed run 不会被误判。比较时允许 **120 秒时钟偏差**（GitHub run 的 `created_at` 可能早于 Worker 返回的 `dispatched_at`）。`dispatched_at` 同时写入 KV（`last_dispatch`），`/status` 可回传。
 - 60 秒宽限期只是保险；即使新 run 创建很慢，也不会误显示“已是最新”，只会继续轮询到超时。
 - 单次 `/status` 失败 `continue`，不中断轮询。
 - 非交易日 / 当天已跑过：**本次新 run** 正常结束且日期未变 → `unchanged`。

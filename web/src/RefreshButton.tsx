@@ -77,6 +77,7 @@ export function RefreshButton() {
     }
 
     const dispatchedAt = String(res.body.dispatched_at ?? new Date().toISOString())
+    const dispatchedMs = Date.parse(dispatchedAt)
     const beforeDate = before?.last_data_through ?? ''
     const graceUntil = Date.now() + 60_000
     let sawActive = attachedRun
@@ -93,7 +94,8 @@ export function RefreshButton() {
         continue
       }
 
-      const isNewRun = !!st.run?.created_at && st.run.created_at >= dispatchedAt
+      const isNewRun =
+        !!st.run?.created_at && Date.parse(st.run.created_at) >= dispatchedMs - 120_000
       if (st.active) {
         sawActive = true
         continue
