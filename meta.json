@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-23 14:14:01",
+  "generated_at": "2026-10-24 13:16:46",
   "source": "tushare",
   "slice_start": "2016-01-04",
   "slice_end": "2026-10-20",
@@ -39,6 +39,6 @@
     },
     "total": 973
   },
-  "duration_sec": 427.4,
-  "margin_through": "2026-10-22"
+  "duration_sec": 435.2,
+  "margin_through": "2026-10-23"
 }
