@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-30 09:09:22",
+  "generated_at": "2026-10-30 15:46:14",
   "source": "tushare",
   "slice_start": "2016-01-04",
   "slice_end": "2026-10-20",
@@ -27,7 +27,7 @@
     "attempts": {
       "trade_cal": 3,
       "daily": 180,
-      "daily_basic": 181,
+      "daily_basic": 180,
       "stock_st": 180,
       "margin_detail": 180,
       "moneyflow": 180,
@@ -39,6 +39,6 @@
     },
     "total": 973
   },
-  "duration_sec": 512.3,
+  "duration_sec": 422.0,
   "margin_through": "2026-10-29"
 }
