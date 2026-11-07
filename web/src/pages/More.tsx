@@ -8,10 +8,6 @@ export default function MorePage() {
     <>
       <PageTitle title="更多" desc={`数据截至 ${meta?.data_through ?? '—'}`} />
       <nav className="links">
-        <Link className="linkrow" to="/limit-sentiment">
-          <span>涨停情绪监控</span>
-          <span className="tag">盘后</span>
-        </Link>
         <Link className="linkrow" to="/margin">
           <span>两融</span>
           <span className="tag">circ-1000</span>

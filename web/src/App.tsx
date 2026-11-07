@@ -30,6 +30,7 @@ const NAV = [
   { to: '/crowding', label: '拥挤度' },
   { to: '/alla', label: '全A' },
   { to: '/layers', label: '内部' },
+  { to: '/limit-sentiment', label: '涨停情绪' },
   { to: '/more', label: '更多' },
 ]
 
