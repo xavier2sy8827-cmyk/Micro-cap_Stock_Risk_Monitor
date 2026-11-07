@@ -8,6 +8,7 @@ import AllAPage from './pages/AllA'
 import CrowdingPage from './pages/Crowding'
 import FactorsPage from './pages/Factors'
 import LayersPage from './pages/Layers'
+import LimitSentimentPage from './pages/LimitSentiment'
 import MarginPage from './pages/Margin'
 import MorePage from './pages/More'
 import Overview from './pages/Overview'
@@ -81,6 +82,7 @@ export default function App() {
             <Route path="/crowding" element={<CrowdingPage />} />
             <Route path="/alla" element={<AllAPage />} />
             <Route path="/layers" element={<LayersPage />} />
+            <Route path="/limit-sentiment" element={<LimitSentimentPage />} />
             <Route path="/margin" element={<MarginPage />} />
             <Route path="/factors" element={<FactorsPage />} />
             <Route path="/about" element={<AboutPage />} />

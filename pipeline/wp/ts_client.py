@@ -293,6 +293,26 @@ class TsClient:
             ),
         )
 
+    def stk_limit(self, day: str) -> pd.DataFrame:
+        key = ("stk_limit", to_compact(day))
+        return self._cached(
+            key,
+            lambda: self.df(
+                "stk_limit", C.FIELDS["stk_limit"], trade_date=to_compact(day),
+                fields=",".join(C.FIELDS["stk_limit"]),
+            ),
+        )
+
+    def limit_list_d(self, day: str, limit_type: str) -> pd.DataFrame:
+        key = ("limit_list_d", to_compact(day), limit_type)
+        return self._cached(
+            key,
+            lambda: self.df(
+                "limit_list_d", C.FIELDS["limit_list_d"], trade_date=to_compact(day),
+                limit_type=limit_type, fields=",".join(C.FIELDS["limit_list_d"]),
+            ),
+        )
+
     def daily_basic(self, day: str) -> pd.DataFrame:
         key = ("daily_basic", to_compact(day))
         return self._cached(

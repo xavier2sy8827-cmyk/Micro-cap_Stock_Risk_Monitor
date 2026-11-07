@@ -157,6 +157,40 @@ def _build_factors(src: Path, dates: pd.Series, meta_src: dict) -> dict:
     return out
 
 
+def _build_limit_sentiment(src: Path) -> dict:
+    """涨停情绪 CSV -> 独立页面 JSON；首次 daily 前输出可展示的空壳。"""
+    stub = {"dates": [], "through": None, "latest": [], "height": {}, "height_pct": {}}
+    path = src / "limit_sentiment.csv"
+    if not path.exists():
+        return stub
+    df = pd.read_csv(path, dtype={"date": str, "universe": str})
+    if df.empty:
+        return stub
+    df = df.dropna(subset=["date", "universe"]).drop_duplicates(["date", "universe"], keep="last").sort_values("date")
+    if df.empty:
+        return stub
+    dates = sorted(df["date"].unique().tolist())
+    latest = []
+    height = {}
+    height_pct = {}
+    for universe in ("main", "wp400", "gem"):
+        sub = df[df["universe"].eq(universe)].sort_values("date")
+        if sub.empty:
+            continue
+        row = sub.iloc[-1]
+        item = {"universe": universe, "asof": str(row["date"])}
+        for col in sub.columns:
+            if col not in ("date", "universe"):
+                item[col] = _num(row[col])
+        latest.append(item)
+        by_date = sub.set_index("date").reindex(dates)
+        height[universe] = _arr(by_date["max_height"]) if "max_height" in by_date else [None] * len(dates)
+        height_pct[universe] = (
+            _arr(by_date["max_height_pct"]) if "max_height_pct" in by_date else [None] * len(dates)
+        )
+    return {"dates": dates, "through": dates[-1], "latest": latest, "height": height, "height_pct": height_pct}
+
+
 def build(data_dir: str | Path, out_dir: str | Path) -> dict:
     src = Path(data_dir)
     m = pd.read_csv(src / "metrics.csv", dtype={"date": str}).sort_values("date").reset_index(drop=True)
@@ -301,6 +335,7 @@ def build(data_dir: str | Path, out_dir: str | Path) -> dict:
         "layers.json": layers,
         "margin.json": margin,
         "factors.json": factors,
+        "limit_sentiment.json": _build_limit_sentiment(src),
     }
     for name, obj in payloads.items():
         with open(out / name, "w", encoding="utf-8", newline="\n") as fh:

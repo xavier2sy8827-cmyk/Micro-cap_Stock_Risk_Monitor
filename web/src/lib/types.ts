@@ -122,3 +122,17 @@ export interface Factors {
   tail_gap: number
   updated_through?: string | null
 }
+
+export interface LimitSentimentRow {
+  universe: string
+  asof: string
+  [metric: string]: string | Num
+}
+
+export interface LimitSentiment {
+  dates: string[]
+  through: string | null
+  latest: LimitSentimentRow[]
+  height: Record<string, Num[]>
+  height_pct: Record<string, Num[]>
+}

@@ -41,6 +41,18 @@ jobs:
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
         run: python -m wp daily --data-dir "${{ github.workspace }}/data_store"
 
+      - name: 涨停情绪监控
+        run: |
+          if [ -f data_store/limit_sentiment_summary.md ]; then
+            cat data_store/limit_sentiment_summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo '## 涨停情绪监控'
+              echo ''
+              echo '本次未生成监控摘要，请查看 Daily update 日志。'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Commit data
         run: |
           cd data_store

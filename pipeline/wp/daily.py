@@ -16,8 +16,20 @@ from wp import series as S
 from wp.checks import read_csv, write_csv
 from wp.dataset import load_slice
 from wp.factors import FACTORS, compute_factors, compute_states, factor_ic_long
+from wp.limit_sentiment import update_limit_sentiment, write_limit_sentiment_failure
 from wp.metrics import compute_metrics
 from wp.ts_client import TsClient, to_dash
+
+
+def _refresh_limit_sentiment(client: TsClient, sl, data_dir: Path, day: str) -> dict:
+    """新监控独立失败，不改变原有 daily 的成功/失败与既有产物。"""
+    try:
+        return update_limit_sentiment(client, sl, data_dir)
+    except Exception as exc:  # noqa: BLE001 - 隔离新增监控，错误写入自身摘要
+        write_limit_sentiment_failure(data_dir, day, exc, token=client.token)
+        message = str(exc).replace(client.token, "[REDACTED]") if client.token else str(exc)
+        print(f"[limit-sentiment] failed: {type(exc).__name__}: {message[:300]}")
+        return {"status": "error", "date": day}
 
 
 def _pct_spec(col: str) -> tuple[str, int, int] | None:
@@ -272,5 +284,8 @@ def run_daily(
     )
     with open(meta_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(json.dumps(meta, ensure_ascii=False, indent=2) + "\n")
-    print(f"[daily] done {day} rows={len(metrics)} elapsed={time.time() - t0:.1f}s")
+
+    # 新增监控放在原产物写完之后：复用同一 Slice/客户端，失败只写自己的摘要。
+    sentiment = _refresh_limit_sentiment(client, sl, target, day)
+    print(f"[daily] done {day} rows={len(metrics)} limit_sentiment={sentiment['status']} elapsed={time.time() - t0:.1f}s")
     return {"status": "ok", "data_through": day, **factor_meta}

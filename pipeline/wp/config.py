@@ -50,6 +50,8 @@ FIELDS = {
     "stock_st": ["ts_code", "name", "trade_date", "type"],
     "namechange": ["ts_code", "name", "start_date", "end_date", "change_reason"],
     "daily": ["ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "amount"],
+    "stk_limit": ["ts_code", "trade_date", "pre_close", "up_limit", "down_limit"],
+    "limit_list_d": ["ts_code", "trade_date", "limit", "limit_times"],
     "daily_basic": ["ts_code", "trade_date", "turnover_rate", "pb", "total_mv", "circ_mv", "dv_ttm"],
     "moneyflow": ["ts_code", "trade_date", "buy_sm_amount", "sell_sm_amount"],
     "margin_detail": ["trade_date", "ts_code", "rzye", "rzmre"],
