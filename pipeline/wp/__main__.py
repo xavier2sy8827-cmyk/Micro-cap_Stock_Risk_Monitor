@@ -87,6 +87,14 @@ def cmd_daily(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_limit_sentiment_backfill(args: argparse.Namespace) -> int:
+    from wp.limit_sentiment import backfill_limit_sentiment
+
+    out = backfill_limit_sentiment(args.start, args.end, args.fetch_start, args.data_dir)
+    print(json.dumps(out, ensure_ascii=False))
+    return 0
+
+
 def cmd_manifest(args: argparse.Namespace) -> int:
     from wp.manifest import make_manifest
 
@@ -142,6 +150,13 @@ def main(argv: list[str] | None = None) -> int:
     p_daily.add_argument("--date", default=None, help="交易日 YYYY-MM-DD；默认最近开市日")
     p_daily.add_argument("--window", type=int, default=100, help="取数窗口（交易日）")
     p_daily.set_defaults(func=cmd_daily)
+
+    p_limit_backfill = sub.add_parser("limit-sentiment-backfill", help="涨停情绪全历史回填")
+    p_limit_backfill.add_argument("--start", required=True)
+    p_limit_backfill.add_argument("--end", required=True)
+    p_limit_backfill.add_argument("--fetch-start", required=True)
+    p_limit_backfill.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))
+    p_limit_backfill.set_defaults(func=cmd_limit_sentiment_backfill)
 
     p_man = sub.add_parser("manifest", help="生成 init_manifest.json")
     p_man.add_argument("--data-dir", default=str(C.DEFAULT_DATA_DIR))

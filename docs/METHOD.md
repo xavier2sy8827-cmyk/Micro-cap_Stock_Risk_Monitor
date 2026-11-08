@@ -117,6 +117,7 @@
 - 断板为昨日收盘涨停、今日未封收；保存总体及首板/连板断板收益、均值、中位数、亏损比例和样本数。昨日 cohort 今日停牌仍计断板，收益统计剔除无行情样本并分列样本数。昨停溢价覆盖昨日全部涨停股。
 - 炸板率为日线“触及涨停但未封收”的代理：炸板只数 / 触及涨停只数。`limit_list_d` 的 U/Z/D 只作辅助核对，失败不影响核心结果。
 - 输出 `limit_sentiment.csv`、`limit_sentiment_events.csv`（事件审计明细）、`limit_sentiment_summary.md`。历史行 append-only，仅本次运行日允许重跑替换，避免窗口首日重写旧 cohort；Action 追加 Step Summary，`build-site` 另生成 `limit_sentiment.json` 供前端 Sheet。首次更新前 JSON 为空壳，页面显示等待更新。监控异常由 `daily` 隔离并写入自身摘要，不改变原任务结果。
+- 全历史初始化使用手动命令 `python -m wp limit-sentiment-backfill --start 2020-01-02 --end <交易日> --fetch-start 2019-01-01 --data-dir <数据目录>`；计算含预热但输出仅从 `start` 开始。仅显式回填允许替换重叠日期，以修复短窗口预热截断；每日增量不受影响。21 个代表日对拍见 [`LIMIT_SENTIMENT_VALIDATION.md`](LIMIT_SENTIMENT_VALIDATION.md)。
 
 ## 8. 已知对拍差异（2026-10-16）
 
@@ -132,4 +133,4 @@
 
 - `python -m wp manifest`：对每个输出 CSV 生成 sha256、行数、列数、日期范围与代码 commit。
 - `python -m wp verify`：检查行数、日期覆盖、关键列非空率、`corr60/ls_vol` 连续缺失段、因子面板尾部 20 日为空等不变量。
-- `pytest`：池规则、CSV 读写、字段断言、分位窗口、因子尾部掩码、涨停情绪口径、页面 JSON 与失败隔离等 41 个用例。
+- `pytest`：池规则、CSV 读写、字段断言、分位窗口、因子尾部掩码、涨停情绪口径、页面 JSON、回填与失败隔离等 42 个用例。

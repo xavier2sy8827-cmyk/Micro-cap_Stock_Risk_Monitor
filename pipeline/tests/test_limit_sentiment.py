@@ -16,6 +16,7 @@ from wp.limit_sentiment import (
     _merge_metrics,
     compute_limit_sentiment,
     render_summary,
+    update_limit_sentiment,
     write_limit_sentiment_failure,
 )
 
@@ -249,3 +250,46 @@ def test_build_limit_sentiment_json_and_empty_stub(tmp_path) -> None:
     assert main["broken_close_mean"] is not None
     assert out["height"]["main"][-1] == 0.0
     json.dumps(out, ensure_ascii=False, allow_nan=False)
+
+
+def test_explicit_backfill_replaces_only_overlapping_history(tmp_path, monkeypatch) -> None:
+    hist = pd.DataFrame(
+        {
+            "date": ["2024-01-03", "2024-01-04"],
+            "universe": ["main", "main"],
+            "max_height": [9.0, 1.0],
+        }
+    )
+    write_csv(hist, tmp_path / "limit_sentiment.csv")
+    frames, st, nc = make_inputs()
+    full, _ = compute_limit_sentiment(make_slice(), frames, st, nc)
+    new = full[(full["date"] == "2024-01-04") & (full["universe"] == "main")].copy()
+
+    class FakeClient:
+        def stk_limit(self, day):  # noqa: ANN001
+            return pd.DataFrame({"ts_code": ["000001.SZ"]})
+
+        def fetch_many(self, days, fn):  # noqa: ANN001
+            return {day: pd.DataFrame({"ts_code": ["000001.SZ"]}) for day in days}
+
+        def stock_st(self, day):  # noqa: ANN001
+            return pd.DataFrame()
+
+        def namechange(self, start, end):  # noqa: ANN001
+            return pd.DataFrame()
+
+        def limit_list_d(self, day, limit_type):  # noqa: ANN001
+            return pd.DataFrame()
+
+    monkeypatch.setattr(
+        "wp.limit_sentiment.compute_limit_sentiment",
+        lambda sl, limit_frames, st_frames, namechange: (new, pd.DataFrame()),
+    )
+    out = update_limit_sentiment(
+        FakeClient(), SimpleNamespace(days=["20240104"]), tmp_path, replace_existing=True
+    )
+    assert out["status"] == "ok"
+    merged = pd.read_csv(tmp_path / "limit_sentiment.csv")
+    assert len(merged) == 2
+    assert merged.loc[merged["date"].eq("2024-01-04"), "max_height"].iloc[0] == 2.0
+    assert merged.loc[merged["date"].eq("2024-01-03"), "max_height"].iloc[0] == 9.0

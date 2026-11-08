@@ -10,7 +10,7 @@ import pandas as pd
 from wp import config as C
 from wp import series as S
 from wp.checks import read_csv, write_csv
-from wp.dataset import Slice, _effective_names
+from wp.dataset import Slice, _effective_names, load_slice
 from wp.ts_client import TsClient, to_dash
 
 UNIVERSES = ("main", "wp400", "gem")
@@ -398,7 +398,13 @@ def write_limit_sentiment_failure(data_dir: str | Path, day: str, error: Excepti
     _write_summary(target, text)
 
 
-def update_limit_sentiment(client: TsClient, sl: Slice, data_dir: str | Path) -> dict:
+def update_limit_sentiment(
+    client: TsClient,
+    sl: Slice,
+    data_dir: str | Path,
+    replace_existing: bool = False,
+    output_start: str | None = None,
+) -> dict:
     target = Path(data_dir)
     target.mkdir(parents=True, exist_ok=True)
     day = sl.days[-1]
@@ -408,13 +414,25 @@ def update_limit_sentiment(client: TsClient, sl: Slice, data_dir: str | Path) ->
     st_frames = {d: client.stock_st(d) for d in sl.days}
     namechange = _namechange_frames(client, sl.days)
     metrics_new, events_new = compute_limit_sentiment(sl, limit_frames, st_frames, namechange)
+    if output_start is not None:
+        output_start = to_dash(output_start)
+        metrics_new = metrics_new[metrics_new["date"] >= output_start].copy()
+        events_new = events_new[events_new["date"] >= output_start].copy()
 
     metric_path = target / METRICS_FILENAME
     event_path = target / EVENTS_FILENAME
     hist_metrics = read_csv(metric_path, dtype={"date": str}) if metric_path.exists() else pd.DataFrame()
     hist_events = read_csv(event_path, dtype={"date": str}) if event_path.exists() else pd.DataFrame()
+    if replace_existing:
+        # 仅显式全历史回填允许替换重叠日期，消除首次短窗口的预热截断。
+        metric_dates = set(metrics_new["date"].astype(str)) if "date" in metrics_new else set()
+        event_dates = set(events_new["date"].astype(str)) if "date" in events_new else set()
+        if not hist_metrics.empty:
+            hist_metrics = hist_metrics[~hist_metrics["date"].astype(str).isin(metric_dates)]
+        if not hist_events.empty:
+            hist_events = hist_events[~hist_events["date"].astype(str).isin(event_dates)]
     metrics = _merge_metrics(hist_metrics, metrics_new, run_day=day)
-    events = _merge_events(hist_events, events_new, run_day=day)
+    events = _merge_events(hist_events, events_new, run_day=day).reindex(columns=EVENT_COLUMNS)
     write_csv(metrics, metric_path)
     write_csv(events, event_path, columns=EVENT_COLUMNS)
 
@@ -428,3 +446,24 @@ def update_limit_sentiment(client: TsClient, sl: Slice, data_dir: str | Path) ->
             print(f"[limit-sentiment] 辅助榜单 {kind} 不可用: {type(exc).__name__}: {str(exc)[:160]}")
     _write_summary(target, render_summary(metrics, day, aux_status, aux_counts))
     return {"status": "ok", "date": to_dash(day), "rows": len(metrics_new), "aux_status": aux_status}
+
+
+def backfill_limit_sentiment(
+    start: str,
+    end: str,
+    fetch_start: str,
+    data_dir: str | Path,
+) -> dict:
+    """手动全历史回填：复用同一 Slice/现有池，不改原 backfill 指标与调度。"""
+    client = TsClient(log=print)
+    sl = load_slice(
+        client,
+        start=start,
+        end=end,
+        fetch_start=fetch_start,
+        include_margin=False,
+        include_moneyflow=False,
+    )
+    return update_limit_sentiment(
+        client, sl, data_dir, replace_existing=True, output_start=start
+    )
