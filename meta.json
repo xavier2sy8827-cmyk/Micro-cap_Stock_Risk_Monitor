@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-11 17:03:48",
+  "generated_at": "2026-11-12 09:07:35",
   "source": "tushare",
   "slice_start": "2016-01-04",
   "slice_end": "2026-10-20",
-  "days": 2636,
-  "data_through": "2026-11-11",
+  "days": 2637,
+  "data_through": "2026-11-12",
   "warnings": [],
-  "factor_ic_through": "2026-10-14",
+  "factor_ic_through": "2026-10-15",
   "factor_panel_rows": 973266,
   "pipeline_version": "0.1.0",
   "calls": {
@@ -39,6 +39,6 @@
     },
     "total": 973
   },
-  "duration_sec": 434.7,
-  "margin_through": "2026-11-10"
+  "duration_sec": 405.5,
+  "margin_through": "2026-11-11"
 }
