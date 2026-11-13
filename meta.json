@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-12 17:31:29",
+  "generated_at": "2026-11-13 02:49:55",
   "source": "tushare",
   "slice_start": "2016-01-04",
   "slice_end": "2026-10-20",
@@ -13,7 +13,7 @@
   "calls": {
     "calls": {
       "trade_cal": 3,
-      "daily": 180,
+      "daily": 181,
       "daily_basic": 180,
       "stock_st": 180,
       "margin_detail": 180,
@@ -26,7 +26,7 @@
     },
     "attempts": {
       "trade_cal": 3,
-      "daily": 180,
+      "daily": 181,
       "daily_basic": 180,
       "stock_st": 180,
       "margin_detail": 180,
@@ -37,8 +37,8 @@
       "index_classify": 2,
       "index_member": 59
     },
-    "total": 973
+    "total": 974
   },
-  "duration_sec": 412.8,
-  "margin_through": "2026-11-11"
+  "duration_sec": 433.3,
+  "margin_through": "2026-11-12"
 }
